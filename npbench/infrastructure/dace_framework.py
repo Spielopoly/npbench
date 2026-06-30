@@ -1,11 +1,17 @@
 # Copyright 2021 ETH Zurich and the NPBench authors. All rights reserved.
+import contextlib
 import importlib
 import os
 import pkg_resources
+import signal
 import traceback
 
 from npbench.infrastructure import Benchmark, Framework, utilities as util
-from typing import Callable, Sequence, Tuple
+from typing import Any, Callable, Dict, Sequence, Tuple
+
+# Timeout (seconds) for canonicalize + VectorizeCuTile.  Some @dace.program
+# SDFGs send canonicalize into a near-infinite InlineMultistateSDFG loop.
+_CUTILE_LOWER_TIMEOUT_S = 120
 
 
 class DaceFramework(Framework):
@@ -30,8 +36,11 @@ class DaceFramework(Framework):
         return pkg_resources.get_distribution("dace").version
 
     def copy_func(self) -> Callable:
-        """ Returns the copy-method that should be used 
+        """ Returns the copy-method that should be used
         for copying the benchmark arguments. """
+        if self.fname == "dace_cutile":
+            # cuTile compiled SDFGs accept host arrays; copy states handle H2D/D2H
+            return super().copy_func()
         if self.fname == "dace_gpu":
             import cupy
 
@@ -74,8 +83,18 @@ class DaceFramework(Framework):
             ct_impl = getattr(module, func_str)
 
         except Exception as e:
+            if self.fname == "dace_cutile":
+                print(f"DaCe cuTile: failed to import {module_str}: {e}")
+                return []
             print("Failed to load the DaCe implementation.")
             raise (e)
+
+        # ── cuTile branch ───────────────────────────────────────────────
+        # Canonicalize → VectorizeCuTile → compile, trying multiple width
+        # configs.  Returns early — the standard DaCe pipeline below is
+        # skipped for cuTile.
+        if self.fname == "dace_cutile":
+            return self._cutile_implementations(ct_impl, func_str)
 
         ##### Experimental: Load strict SDFG
         sdfg_loaded = False
@@ -291,6 +310,86 @@ class DaceFramework(Framework):
             fe_time += compile_time[0]
 
         return implementations
+
+    # ── cuTile helpers ────────────────────────────────────────────────
+
+    def _cutile_implementations(
+        self, func: Callable, func_str: str
+    ) -> Sequence[Tuple[Callable, str]]:
+        """Build cuTile variants: canonicalize -> VectorizeCuTile -> compile.
+
+        Tries width configurations that match the kernel's array
+        dimensionality and returns all that succeed.  Mismatched
+        dimensionalities are skipped because the cuTile runtime can
+        SIGABRT (not catchable) on shape mismatches.
+
+        :param func: The ``@dace.program`` function from the shared _dace module.
+        :param func_str: The function name (for diagnostics).
+        :returns: List of (compiled_sdfg, variant_name) tuples.
+        """
+        import copy
+        import dace.data
+
+        try:
+            base_sdfg = func.to_sdfg(simplify=False)
+        except Exception as e:
+            print(f"  [dace_cutile] to_sdfg failed for {func_str}: {e}")
+            return []
+
+        # Determine kernel dimensionality from non-transient arrays to
+        # avoid trying width configs that would cause cuTile SIGABRT.
+        max_ndim = max(
+            (len(arr.shape) for arr in base_sdfg.arrays.values()
+             if not arr.transient and isinstance(arr, dace.data.Array)),
+            default=1
+        )
+
+        width_configs = [
+            (128,), (64,), (32,), (16,), (8,), (4,), (2,), (1,),
+            (32, 32), (16, 32), (16, 16), (8, 8), (8, 4),
+            (2,4,4), (8,8,8), 
+            ]
+        results = []
+
+        for widths in width_configs:
+            if len(widths) > max_ndim:
+                continue  # dimensionality mismatch -> skip
+            try:
+                sdfg_copy = copy.deepcopy(base_sdfg)
+                self._lower_cutile(sdfg_copy, widths)
+                csdfg = sdfg_copy.compile()
+                label = "x".join(str(w) for w in widths)
+                results.append((csdfg, f"cutile_{label}"))
+            except Exception as e:
+                print(f"  [dace_cutile] widths={widths} failed for {func_str}: {e}")
+
+        return results
+
+    @staticmethod
+    def _lower_cutile(sdfg: Any, widths: Tuple[int, ...]) -> None:
+        """Canonicalize and cuTile-lower an SDFG with a SIGALRM timeout.
+
+        :param sdfg: The SDFG to lower (modified in place).
+        :param widths: Tile widths (must be powers of 2).
+        :raises TimeoutError: If the budget is exceeded.
+        """
+        from dace.transformation.passes.canonicalize import canonicalize
+        from dace.transformation.passes.vectorization import VectorizeCuTile
+
+        # 
+        def alarm_handler(signum, frame):
+            raise TimeoutError("canonicalize + VectorizeCuTile timed out")
+
+        old_handler = signal.signal(signal.SIGALRM, alarm_handler)
+        signal.alarm(_CUTILE_LOWER_TIMEOUT_S)
+        try:
+            with open(os.devnull, "w") as devnull, \
+                    contextlib.redirect_stdout(devnull):
+                canonicalize(sdfg)
+                VectorizeCuTile(widths=widths).apply_pass(sdfg, {})
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
 
     def params(self, bench: Benchmark, impl: Callable = None):
         return [p for p in bench.info["parameters"]['L'].keys() if p not in bench.info["input_args"]]

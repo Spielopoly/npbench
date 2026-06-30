@@ -1,0 +1,10 @@
+{
+    "framework": {
+        "simple_name": "dace_cutile",
+        "full_name": "DaCe cuTile",
+        "prefix": "dc",
+        "postfix": "dace",
+        "class": "DaceFramework",
+        "arch": "gpu"
+    }
+}

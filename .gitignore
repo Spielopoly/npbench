@@ -131,3 +131,7 @@ dmypy.json
 # dace
 .dacecache/
 *.csv
+
+# Runtime artifacts
+npbench.db
+_dacegraphs/
