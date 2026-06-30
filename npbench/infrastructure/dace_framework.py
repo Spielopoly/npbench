@@ -373,23 +373,9 @@ class DaceFramework(Framework):
         :param widths: Tile widths (must be powers of 2).
         :raises TimeoutError: If the budget is exceeded.
         """
-        from dace.transformation.passes.canonicalize import canonicalize
         from dace.transformation.passes.vectorization import VectorizeCuTile
 
-        # 
-        def alarm_handler(signum, frame):
-            raise TimeoutError("canonicalize + VectorizeCuTile timed out")
-
-        old_handler = signal.signal(signal.SIGALRM, alarm_handler)
-        signal.alarm(_CUTILE_LOWER_TIMEOUT_S)
-        try:
-            with open(os.devnull, "w") as devnull, \
-                    contextlib.redirect_stdout(devnull):
-                canonicalize(sdfg)
-                VectorizeCuTile(widths=widths).apply_pass(sdfg, {})
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+        VectorizeCuTile(widths=widths).apply_pass(sdfg, {})
 
     def params(self, bench: Benchmark, impl: Callable = None):
         return [p for p in bench.info["parameters"]['L'].keys() if p not in bench.info["input_args"]]
