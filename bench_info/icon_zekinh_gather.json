@@ -1,0 +1,26 @@
+{
+    "benchmark": {
+        "name": "ICON z_ekinh cell-from-edges gather",
+        "short_name": "icon_zekinh",
+        "relative_path": "icon_zekinh_gather",
+        "module_name": "icon_zekinh_gather",
+        "func_name": "kernel",
+        "kind": "microbench",
+        "domain": "Climate",
+        "dwarf": "unstructured_grid",
+        "parameters": {
+            "S": { "NB": 32, "NLEV": 128, "NPROMA": 128 },
+            "M": { "NB": 64, "NLEV": 128, "NPROMA": 256 },
+            "L": { "NB": 256, "NLEV": 128, "NPROMA": 512 },
+            "paper": { "NB": 256, "NLEV": 128, "NPROMA": 512 }
+        },
+        "init": {
+            "func_name": "initialize",
+            "input_args": ["NB", "NLEV", "NPROMA"],
+            "output_args": ["e_bln", "edge_idx", "edge_blk", "z_kin_hor_e", "z_ekinh"]
+        },
+        "input_args": ["e_bln", "edge_idx", "edge_blk", "z_kin_hor_e", "z_ekinh"],
+        "array_args": ["e_bln", "edge_idx", "edge_blk", "z_kin_hor_e", "z_ekinh"],
+        "output_args": ["z_ekinh"]
+    }
+}

@@ -90,7 +90,7 @@ class DaceFramework(Framework):
             raise (e)
 
         # ── cuTile branch ───────────────────────────────────────────────
-        # Canonicalize → VectorizeCuTile → compile, trying multiple width
+        # VectorizeCuTile → compile, trying multiple width
         # configs.  Returns early — the standard DaCe pipeline below is
         # skipped for cuTile.
         if self.fname == "dace_cutile":
@@ -193,8 +193,8 @@ class DaceFramework(Framework):
                                        out_text="DaCe LoopToMap time2",
                                        context=locals(),
                                        verbose=False)
-            sdfg_list.append(parallel_sdfg)
-            time_list.append(time_list[-1] + ptime1[0] + ptime2[0])
+            # sdfg_list.append(parallel_sdfg)
+            # time_list.append(time_list[-1] + ptime1[0] + ptime2[0])
 
         except Exception as e:
             print("DaCe LoopToMap failed")

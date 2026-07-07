@@ -1,0 +1,26 @@
+{
+    "benchmark": {
+        "name": "CLOUDSC tidy-up branch",
+        "short_name": "cloudsc_tidy",
+        "relative_path": "cloudsc_tidy_branch",
+        "module_name": "cloudsc_tidy_branch",
+        "func_name": "kernel",
+        "kind": "microbench",
+        "domain": "Climate",
+        "dwarf": "structured_grid",
+        "parameters": {
+            "S": { "KLEV": 128, "KLON": 1024 },
+            "M": { "KLEV": 512, "KLON": 2048 },
+            "L": { "KLEV": 1024, "KLON": 8192 },
+            "paper": { "KLEV": 1024, "KLON": 8192 }
+        },
+        "init": {
+            "func_name": "initialize",
+            "input_args": ["KLEV", "KLON"],
+            "output_args": ["zqx_l", "zqx_i", "zqx_v", "za", "ptend_q", "ptend_t"]
+        },
+        "input_args": ["zqx_l", "zqx_i", "zqx_v", "za", "ptend_q", "ptend_t"],
+        "array_args": ["zqx_l", "zqx_i", "zqx_v", "za", "ptend_q", "ptend_t"],
+        "output_args": ["zqx_l", "zqx_i", "zqx_v", "za", "ptend_q", "ptend_t"]
+    }
+}
