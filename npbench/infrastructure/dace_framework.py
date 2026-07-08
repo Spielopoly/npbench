@@ -7,11 +7,7 @@ import signal
 import traceback
 
 from npbench.infrastructure import Benchmark, Framework, utilities as util
-from typing import Any, Callable, Dict, Sequence, Tuple
-
-# Timeout (seconds) for canonicalize + VectorizeCuTile.  Some @dace.program
-# SDFGs send canonicalize into a near-infinite InlineMultistateSDFG loop.
-_CUTILE_LOWER_TIMEOUT_S = 120
+from typing import Any, Callable, Sequence, Tuple
 
 
 class DaceFramework(Framework):
@@ -345,9 +341,9 @@ class DaceFramework(Framework):
         )
 
         width_configs = [
-            (256,), (128,), (64,), (32,), # (16,), (8,), (4,), (2,), (1,),
+            (512,), (256,), (128,), (64,), (32,), # (16,), (8,), (4,), (2,), (1,),
             (32, 32), (16, 32), (16, 16), (8, 8), (8, 4),
-            (2,4,4), (8,8,8), 
+            (2, 4, 4), (8,8,8), 
             # (32,)
             ]
         results = []
