@@ -121,8 +121,8 @@ class DaceFramework(Framework):
                                             out_text="DaCe Strict Transformations time",
                                             context=locals(),
                                             verbose=False)
-            # sdfg_list = [strict_sdfg]
-            # time_list = [parse_time[0] + strict_time[0]]
+            sdfg_list = [strict_sdfg]
+            time_list = [parse_time[0] + strict_time[0]]
         else:
             ldict['strict_sdfg'] = strict_sdfg
         parse_time = [0]
@@ -345,10 +345,10 @@ class DaceFramework(Framework):
         )
 
         width_configs = [
-            # (128,), (64,), (32,), (16,), (8,), (4,), (2,), (1,),
-            # (32, 32), (16, 32), (16, 16), (8, 8), (8, 4),
-            # (2,4,4), (8,8,8), 
-            (32,)
+            (256,), (128,), (64,), (32,), # (16,), (8,), (4,), (2,), (1,),
+            (32, 32), (16, 32), (16, 16), (8, 8), (8, 4),
+            (2,4,4), (8,8,8), 
+            # (32,)
             ]
         results = []
 
