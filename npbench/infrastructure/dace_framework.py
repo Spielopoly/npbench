@@ -6,6 +6,8 @@ import pkg_resources
 import signal
 import traceback
 
+import dace
+
 from npbench.infrastructure import Benchmark, Framework, utilities as util
 from typing import Any, Callable, Sequence, Tuple
 
@@ -160,6 +162,28 @@ class DaceFramework(Framework):
 
         ###########################################################
 
+        try:
+            from dace.transformation.passes.canonicalize import canonicalize
+            canon_sdfg = copy.deepcopy(strict_sdfg)
+            canon_sdfg._name = "canonicalize"
+            # target only picks knob presets; GPU scheduling still happens via
+            # copy_to_gpu + apply_gpu_transformations below (arch-gated because
+            # dace_cpu shares this code path).
+            canon_target = 'gpu' if self.info["arch"] == "gpu" else 'cpu'
+            ldict['canon_sdfg'] = canon_sdfg
+            ldict['canon_target'] = canon_target
+            _, canon_time = util.benchmark("canonicalize(canon_sdfg, target=canon_target)",
+                                           out_text="DaCe Canonicalize time",
+                                           context=locals(),
+                                           verbose=False)
+            sdfg_list.append(canon_sdfg)
+            time_list.append(parse_time[0] + canon_time[0])
+        except Exception as e:
+            print("DaCe canonicalize failed")
+            print(e)
+
+        ###########################################################
+
         def parallelize(sdfg):
             from dace.sdfg import propagation
             try:
@@ -265,7 +289,7 @@ class DaceFramework(Framework):
                 #     # GPUTransform will set GPU schedules by itself
                 opt.set_fast_implementations(sdfg, device)
             if self.info["arch"] == "gpu":
-                if sdfg._name in ['strict', 'parallel', 'fusion']:
+                if sdfg._name in ['strict', 'parallel', 'fusion', 'canonicalize']:
                     _, gpu_time1 = util.benchmark("copy_to_gpu(sdfg)",
                                                   out_text="DaCe GPU transformation time1",
                                                   context=locals(),
@@ -312,12 +336,26 @@ class DaceFramework(Framework):
     def _cutile_implementations(
         self, func: Callable, func_str: str
     ) -> Sequence[Tuple[Callable, str]]:
-        """Build cuTile variants: canonicalize -> VectorizeCuTile -> compile.
+        """Build cuTile variants across four front-end tracks, each followed by
+        the same VectorizeCuTile width sweep -> compile.
 
-        Tries width configurations that match the kernel's array
-        dimensionality and returns all that succeed.  Mismatched
-        dimensionalities are skipped because the cuTile runtime can
-        SIGABRT (not catchable) on shape mismatches.
+        Tracks (front-end preprocessing before VectorizeCuTile):
+          - ``canon``:       ``VectorizeCuTile.canonicalize_for_cutile`` (the
+                             proven pipeline; recorded as ``cutile_canon_<w>``,
+                             replacing the old ``cutile_<w>`` names — DB migrated).
+          - ``parallel``:    simplify + repeated LoopToMap/MapCollapse + MapFusion,
+                             recorded as ``cutile_parallel_<w>``.
+          - ``autoopt_cpu``: ``auto_optimize(DeviceType.CPU, expand=False)``,
+                             recorded as ``cutile_autoopt_cpu_<w>``.
+          - ``autoopt_gpu``: ``auto_optimize(DeviceType.GPU, expand=False)``,
+                             recorded as ``cutile_autoopt_gpu_<w>`` (speculative;
+                             see prep_autoopt_gpu).
+
+        Each track is wrapped in its own try/except so one failing front-end
+        does not kill the others. Within a track, the per-width try/except still
+        skips individual widths. Width configs whose dimensionality exceeds the
+        kernel's are skipped because the cuTile runtime can SIGABRT (not
+        catchable) on shape mismatches.
 
         :param func: The ``@dace.program`` function from the shared _dace module.
         :param func_str: The function name (for diagnostics).
@@ -325,6 +363,12 @@ class DaceFramework(Framework):
         """
         import copy
         import dace.data
+        import dace.dtypes as dtypes
+        import dace.transformation.auto.auto_optimize as opt
+        from dace.sdfg import propagation
+        from dace.transformation.dataflow import MapFusion, MapCollapse
+        from dace.transformation.interstate import LoopToMap
+        from dace.transformation.passes.vectorization import VectorizeCuTile
 
         try:
             base_sdfg = func.to_sdfg(simplify=False)
@@ -332,18 +376,8 @@ class DaceFramework(Framework):
             print(f"  [dace_cutile] to_sdfg failed for {func_str}: {e}")
             return []
 
-        # Canonicalize ONCE per kernel: the canonical form is width-independent
-        # and canonicalize dominates pipeline time, so running it per width
-        # config (below) would cost ~#configs x canonicalize.
-        try:
-            from dace.transformation.passes.vectorization import VectorizeCuTile
-            VectorizeCuTile.canonicalize_for_cutile(base_sdfg)
-        except Exception as e:
-            print(f"  [dace_cutile] canonicalize failed for {func_str}: {e}")
-            return []
-
-        # Determine kernel dimensionality from non-transient arrays to
-        # avoid trying width configs that would cause cuTile SIGABRT.
+        # Kernel dimensionality from non-transient arrays (unchanged by any
+        # front-end) — used to skip width configs that would cause a SIGABRT.
         max_ndim = max(
             (len(arr.shape) for arr in base_sdfg.arrays.values()
              if not arr.transient and isinstance(arr, dace.data.Array)),
@@ -351,34 +385,86 @@ class DaceFramework(Framework):
         )
 
         width_configs = [
-            (512,), (256,), (128,), (64,), (32,), # (16,), (8,), (4,), (2,), (1,),
+            (512,), (256,), (128,), (64,), (32,),  # (16,), (8,), (4,), (2,), (1,),
             (32, 32), (16, 32), (16, 16), (8, 8), (8, 4),
-            (2, 4, 4), (8,8,8), 
+            (2, 4, 4), (8,8,8),
             # (32,)
             ]
-        results = []
 
-        for widths in width_configs:
-            if len(widths) > max_ndim:
-                continue  # dimensionality mismatch -> skip
+        def prep_canon(sdfg: dace.SDFG) -> None:
+            VectorizeCuTile.canonicalize_for_cutile(sdfg)
+
+        def prep_parallel(sdfg: dace.SDFG) -> None:
+            # Simplify first: base is built with simplify=False and LoopToMap
+            # works on simplified control flow. Then repeatedly parallelize
+            # loops and collapse maps to fixpoint, and greedily fuse.
+            sdfg.simplify()
+            for sd in sdfg.all_sdfgs_recursive():
+                propagation.propagate_states(sd)
+            num = 1
+            while num > 0:
+                num = sdfg.apply_transformations_repeated([LoopToMap, MapCollapse])
+                sdfg.simplify()
+            sdfg.apply_transformations_repeated([MapFusion])
+            sdfg.simplify()
+
+        def prep_autoopt_cpu(sdfg: dace.SDFG) -> None:
+            # CPU device: VectorizeCuTile owns GPU lowering (its step 3), so
+            # hand the vectorizer CPU-form input. expand=False leaves library
+            # nodes unexpanded for CuTileSetLibraryImplementations to select.
+            opt.auto_optimize(sdfg, dtypes.DeviceType.CPU, expand=False)
+
+        def prep_autoopt_gpu(sdfg: dace.SDFG) -> None:
+            # Speculative track (user-requested). auto_optimize(GPU) already
+            # GPU-schedules and inserts host<->device copies; VectorizeCuTile
+            # step 3 re-runs GPUTransformSDFG, which is near-idempotent.
+            # The vectorizer was designed for CPU-form input and may not fire on
+            # GPU-form input — a failed/empty track is an accepted data point.
+            opt.auto_optimize(sdfg, dtypes.DeviceType.GPU, expand=False)
+
+        tracks = [
+            ("canon", prep_canon),
+            ("parallel", prep_parallel),
+            ("autoopt_cpu", prep_autoopt_cpu),
+            ("autoopt_gpu", prep_autoopt_gpu),
+        ]
+
+        results = []
+        for label, prep in tracks:
             try:
-                sdfg_copy = copy.deepcopy(base_sdfg)
-                self._lower_cutile(sdfg_copy, widths)
-                csdfg = sdfg_copy.compile()
-                label = "x".join(str(w) for w in widths)
-                results.append((csdfg, f"cutile_{label}"))
+                prepped = copy.deepcopy(base_sdfg)
+                prepped._name = f"{prepped.name}_{label}"  # distinct build dirs
+                prep(prepped)
             except Exception as e:
-                print(f"  [dace_cutile] widths={widths} failed for {func_str}: {e}")
+                print(f"  [dace_cutile] {label} front-end failed for {func_str}: {e}")
+                continue
+            for widths in width_configs:
+                if len(widths) > max_ndim:
+                    continue  # dimensionality mismatch -> skip
+                try:
+                    sdfg_copy = copy.deepcopy(prepped)
+                    self._lower_cutile(sdfg_copy, widths)
+                    width_str = "x".join(str(w) for w in widths)
+                    # Distinct build dir per (track, width): prepped.name already
+                    # carries the track label, width_str ('x'-joined digits) keeps
+                    # the name a valid SDFG identifier (e.g. atax_canon_32x32).
+                    sdfg_copy._name = f"{prepped.name}_{width_str}"
+                    csdfg = sdfg_copy.compile()
+                    results.append((csdfg, f"cutile_{label}_{width_str}"))
+                except Exception as e:
+                    print(f"  [dace_cutile] {label} widths={widths} failed for {func_str}: {e}")
 
         return results
 
     @staticmethod
-    def _lower_cutile(sdfg: Any, widths: Tuple[int, ...]) -> None:
-        """cuTile-lower an already-canonicalized SDFG.
+    def _lower_cutile(sdfg: dace.SDFG, widths: Tuple[int, ...]) -> None:
+        """cuTile-lower an SDFG with a fixed tile-width configuration.
 
-        :param sdfg: The SDFG to lower (modified in place). Must already be
-            canonicalized (``VectorizeCuTile.canonicalize_for_cutile`` runs
-            once per kernel in ``_cutile_implementations``).
+        Canonicalization is intentionally skipped (``run_canonicalize=False``):
+        each track in ``_cutile_implementations`` does its own front-end prep
+        before calling this, so the built-in canonicalize step must not re-run.
+
+        :param sdfg: The SDFG to lower (modified in place).
         :param widths: Tile widths (must be powers of 2).
         """
         from dace.transformation.passes.vectorization import VectorizeCuTile
