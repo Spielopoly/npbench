@@ -332,6 +332,16 @@ class DaceFramework(Framework):
             print(f"  [dace_cutile] to_sdfg failed for {func_str}: {e}")
             return []
 
+        # Canonicalize ONCE per kernel: the canonical form is width-independent
+        # and canonicalize dominates pipeline time, so running it per width
+        # config (below) would cost ~#configs x canonicalize.
+        try:
+            from dace.transformation.passes.vectorization import VectorizeCuTile
+            VectorizeCuTile.canonicalize_for_cutile(base_sdfg)
+        except Exception as e:
+            print(f"  [dace_cutile] canonicalize failed for {func_str}: {e}")
+            return []
+
         # Determine kernel dimensionality from non-transient arrays to
         # avoid trying width configs that would cause cuTile SIGABRT.
         max_ndim = max(
@@ -364,15 +374,16 @@ class DaceFramework(Framework):
 
     @staticmethod
     def _lower_cutile(sdfg: Any, widths: Tuple[int, ...]) -> None:
-        """Canonicalize and cuTile-lower an SDFG with a SIGALRM timeout.
+        """cuTile-lower an already-canonicalized SDFG.
 
-        :param sdfg: The SDFG to lower (modified in place).
+        :param sdfg: The SDFG to lower (modified in place). Must already be
+            canonicalized (``VectorizeCuTile.canonicalize_for_cutile`` runs
+            once per kernel in ``_cutile_implementations``).
         :param widths: Tile widths (must be powers of 2).
-        :raises TimeoutError: If the budget is exceeded.
         """
         from dace.transformation.passes.vectorization import VectorizeCuTile
 
-        VectorizeCuTile(widths=widths).apply_pass(sdfg, {})
+        VectorizeCuTile(widths=widths, run_canonicalize=False).apply_pass(sdfg, {})
 
     def params(self, bench: Benchmark, impl: Callable = None):
         return [p for p in bench.info["parameters"]['L'].keys() if p not in bench.info["input_args"]]
