@@ -83,9 +83,14 @@ class Test(object):
             dwarf = self.bench.info["dwarf"]
         version = self.frmwrk.version()
 
-        @tout.exit_after(timeout)
+        # Propagate the per-implementation timeout to the framework so that
+        # implementations() can bound each variant's build (transformations,
+        # compilation) individually.
+        self.frmwrk.timeout = timeout
+
         def first_execution(impl, impl_name):
-            return self._execute(self.frmwrk, impl, impl_name, "first/validation", context, 1, ignore_errors)
+            with tout.time_limit(timeout, "{} first execution".format(impl_name)):
+                return self._execute(self.frmwrk, impl, impl_name, "first/validation", context, 1, ignore_errors)
 
         # create a database connection
         conn = util.create_connection("npbench.db")
@@ -104,8 +109,8 @@ class Test(object):
             for impl, impl_name in self.frmwrk.implementations(self.bench):
                 # First execution
                 try:
-                    frmwrk_out, _ = first_execution(impl, impl_name)
-                except KeyboardInterrupt:
+                    frmwrk_out, first_timelist = first_execution(impl, impl_name)
+                except (tout.StageTimeout, KeyboardInterrupt):
                     print("Implementation \"{}\" timed out.".format(impl_name), flush=True)
                     continue
                 except Exception:
@@ -137,8 +142,23 @@ class Test(object):
                         print("Failed to run {} validation.".format(self.frmwrk.info["full_name"]))
                         if not ignore_errors:
                             raise
-                # Main execution
-                _, timelist = self._execute(self.frmwrk, impl, impl_name, "median", context, repeat, ignore_errors)
+                # Main execution, also time-limited per implementation. The
+                # median run repeats `repeat` times, so scale the limit from
+                # the measured first-execution time (with 4x slack), floored
+                # at the plain timeout so short-running variants are never
+                # dropped unfairly.
+                med_limit = None
+                if timeout:
+                    med_limit = timeout
+                    if first_timelist:
+                        med_limit = max(timeout, 4.0 * repeat * first_timelist[0])
+                try:
+                    with tout.time_limit(med_limit, "{} main execution".format(impl_name)):
+                        _, timelist = self._execute(self.frmwrk, impl, impl_name, "median", context, repeat,
+                                                    ignore_errors)
+                except tout.StageTimeout:
+                    print("Implementation \"{}\" main execution timed out.".format(impl_name), flush=True)
+                    continue
                 # Write data immediately so results survive a killed run
                 if timelist and conn is not None:
                     for t in timelist:

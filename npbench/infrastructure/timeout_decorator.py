@@ -23,6 +23,8 @@ SOFTWARE.
 """
 from __future__ import print_function
 
+import contextlib
+import signal
 import sys
 import threading
 from time import sleep
@@ -30,6 +32,53 @@ try:
     import thread
 except ImportError:
     import _thread as thread
+
+
+class StageTimeout(BaseException):
+    """Raised when a per-implementation stage exceeds its time limit.
+
+    Inherits from BaseException so intermediate ``except Exception`` handlers
+    (inside DaCe passes or the benchmark harness) cannot swallow it — the
+    timeout must abort the whole stage, not just an inner step.
+    """
+    pass
+
+
+@contextlib.contextmanager
+def time_limit(seconds, what=""):
+    """Limit the wall-clock time of a code block via SIGALRM.
+
+    Raises StageTimeout if the block runs longer than ``seconds``. Only works
+    in the main thread and only interrupts Python code — a hang inside a
+    native call (e.g. a CUDA kernel) is NOT interrupted; an external process
+    kill remains the backstop for those.
+
+    :param seconds: Time limit in seconds; None or <= 0 disables the limit.
+    :param what: Label used in the timeout message.
+    """
+    if seconds is None or seconds <= 0 or threading.current_thread() is not threading.main_thread():
+        # No limit requested, or not in the main thread (SIGALRM only works
+        # there) — run unrestricted.
+        yield
+        return
+
+    def _handler(signum, frame):
+        raise StageTimeout("{} timed out after {}s".format(what or "stage", seconds))
+
+    import time as _time
+    old_handler = signal.signal(signal.SIGALRM, _handler)
+    outer_remaining = signal.getitimer(signal.ITIMER_REAL)[0]  # enclosing limit, if any
+    start = _time.monotonic()
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
+        if outer_remaining > 0:
+            # Re-arm the enclosing limit with whatever time it has left.
+            left = outer_remaining - (_time.monotonic() - start)
+            signal.setitimer(signal.ITIMER_REAL, max(left, 0.001))
 
 try:  # use code that works the same in Python 2 and 3
     range, _print = xrange, print

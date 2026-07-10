@@ -18,6 +18,10 @@ class Framework(object):
         """
 
         self.fname = fname
+        # Per-implementation stage time limit in seconds (None = unlimited).
+        # Set by Test.run from the --timeout CLI argument; used by frameworks
+        # whose implementations() does expensive per-variant work (DaCe).
+        self.timeout = None
 
         parent_folder = pathlib.Path(__file__).parent.absolute()
         frmwrk_filename = "{f}.json".format(f=fname)

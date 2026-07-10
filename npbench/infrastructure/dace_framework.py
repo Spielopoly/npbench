@@ -8,7 +8,7 @@ import traceback
 
 import dace
 
-from npbench.infrastructure import Benchmark, Framework, utilities as util
+from npbench.infrastructure import Benchmark, Framework, timeout_decorator as tout, utilities as util
 from typing import Any, Callable, Sequence, Tuple
 
 
@@ -107,18 +107,24 @@ class DaceFramework(Framework):
         if not sdfg_loaded:
             #########################################################
             # Prepare SDFGs
-            base_sdfg, parse_time = util.benchmark("__npb_result = ct_impl.to_sdfg(simplify=False)",
-                                                   out_text="DaCe parsing time",
-                                                   context=locals(),
-                                                   output='__npb_result',
-                                                   verbose=False)
-            strict_sdfg = copy.deepcopy(base_sdfg)
-            strict_sdfg._name = "strict"
-            ldict['strict_sdfg'] = strict_sdfg
-            _, strict_time = util.benchmark("strict_sdfg.apply_strict_transformations()",
-                                            out_text="DaCe Strict Transformations time",
-                                            context=locals(),
-                                            verbose=False)
+            try:
+                with tout.time_limit(self.timeout, "DaCe parse + strict transformations"):
+                    base_sdfg, parse_time = util.benchmark("__npb_result = ct_impl.to_sdfg(simplify=False)",
+                                                           out_text="DaCe parsing time",
+                                                           context=locals(),
+                                                           output='__npb_result',
+                                                           verbose=False)
+                    strict_sdfg = copy.deepcopy(base_sdfg)
+                    strict_sdfg._name = "strict"
+                    ldict['strict_sdfg'] = strict_sdfg
+                    _, strict_time = util.benchmark("strict_sdfg.apply_strict_transformations()",
+                                                    out_text="DaCe Strict Transformations time",
+                                                    context=locals(),
+                                                    verbose=False)
+            except tout.StageTimeout as e:
+                # Everything below builds on strict_sdfg — nothing to salvage.
+                print(e)
+                return []
             sdfg_list = [strict_sdfg]
             time_list = [parse_time[0] + strict_time[0]]
         else:
@@ -140,21 +146,22 @@ class DaceFramework(Framework):
         ##########################################################
 
         try:
-            fusion_sdfg = copy.deepcopy(strict_sdfg)
-            fusion_sdfg._name = "fusion"
-            ldict['fusion_sdfg'] = fusion_sdfg
-            _, fusion_time1 = util.benchmark("fusion_sdfg.apply_transformations_repeated([MapFusion])",
-                                             out_text="DaCe MapFusion time",
-                                             context=locals(),
-                                             verbose=False)
-            _, fusion_time2 = util.benchmark("fusion_sdfg.apply_strict_transformations()",
-                                             out_text="DaCe Strict Transformations time",
-                                             context=locals(),
-                                             verbose=False)
-            sdfg_list.append(fusion_sdfg)
-            # time_list.append(time_list[-1] + fusion_time1[0] + fusion_time2[0])
-            time_list.append(parse_time[0] + fusion_time1[0] + fusion_time2[0])
-        except Exception as e:
+            with tout.time_limit(self.timeout, "DaCe fusion variant build"):
+                fusion_sdfg = copy.deepcopy(strict_sdfg)
+                fusion_sdfg._name = "fusion"
+                ldict['fusion_sdfg'] = fusion_sdfg
+                _, fusion_time1 = util.benchmark("fusion_sdfg.apply_transformations_repeated([MapFusion])",
+                                                 out_text="DaCe MapFusion time",
+                                                 context=locals(),
+                                                 verbose=False)
+                _, fusion_time2 = util.benchmark("fusion_sdfg.apply_strict_transformations()",
+                                                 out_text="DaCe Strict Transformations time",
+                                                 context=locals(),
+                                                 verbose=False)
+                sdfg_list.append(fusion_sdfg)
+                # time_list.append(time_list[-1] + fusion_time1[0] + fusion_time2[0])
+                time_list.append(parse_time[0] + fusion_time1[0] + fusion_time2[0])
+        except (Exception, tout.StageTimeout) as e:
             print("DaCe MapFusion failed")
             print(e)
             fusion_sdfg = copy.deepcopy(strict_sdfg)
@@ -163,22 +170,23 @@ class DaceFramework(Framework):
         ###########################################################
 
         try:
-            from dace.transformation.passes.canonicalize import canonicalize
-            canon_sdfg = copy.deepcopy(strict_sdfg)
-            canon_sdfg._name = "canonicalize"
-            # target only picks knob presets; GPU scheduling still happens via
-            # copy_to_gpu + apply_gpu_transformations below (arch-gated because
-            # dace_cpu shares this code path).
-            canon_target = 'gpu' if self.info["arch"] == "gpu" else 'cpu'
-            ldict['canon_sdfg'] = canon_sdfg
-            ldict['canon_target'] = canon_target
-            _, canon_time = util.benchmark("canonicalize(canon_sdfg, target=canon_target)",
-                                           out_text="DaCe Canonicalize time",
-                                           context=locals(),
-                                           verbose=False)
-            sdfg_list.append(canon_sdfg)
-            time_list.append(parse_time[0] + canon_time[0])
-        except Exception as e:
+            with tout.time_limit(self.timeout, "DaCe canonicalize variant build"):
+                from dace.transformation.passes.canonicalize import canonicalize
+                canon_sdfg = copy.deepcopy(strict_sdfg)
+                canon_sdfg._name = "canonicalize"
+                # target only picks knob presets; GPU scheduling still happens via
+                # copy_to_gpu + apply_gpu_transformations below (arch-gated because
+                # dace_cpu shares this code path).
+                canon_target = 'gpu' if self.info["arch"] == "gpu" else 'cpu'
+                ldict['canon_sdfg'] = canon_sdfg
+                ldict['canon_target'] = canon_target
+                _, canon_time = util.benchmark("canonicalize(canon_sdfg, target=canon_target)",
+                                               out_text="DaCe Canonicalize time",
+                                               context=locals(),
+                                               verbose=False)
+                sdfg_list.append(canon_sdfg)
+                time_list.append(parse_time[0] + canon_time[0])
+        except (Exception, tout.StageTimeout) as e:
             print("DaCe canonicalize failed")
             print(e)
 
@@ -202,21 +210,22 @@ class DaceFramework(Framework):
                     sdfg.simplify()
 
         try:
-            parallel_sdfg = copy.deepcopy(fusion_sdfg)
-            parallel_sdfg._name = "parallel"
-            ldict['parallel_sdfg'] = parallel_sdfg
-            _, ptime1 = util.benchmark("parallelize(parallel_sdfg)",
-                                       out_text="DaCe LoopToMap time1",
-                                       context=locals(),
-                                       verbose=False)
-            _, ptime2 = util.benchmark("parallel_sdfg.apply_transformations_repeated([MapFusion])",
-                                       out_text="DaCe LoopToMap time2",
-                                       context=locals(),
-                                       verbose=False)
-            # sdfg_list.append(parallel_sdfg)
-            # time_list.append(time_list[-1] + ptime1[0] + ptime2[0])
+            with tout.time_limit(self.timeout, "DaCe parallel variant build"):
+                parallel_sdfg = copy.deepcopy(fusion_sdfg)
+                parallel_sdfg._name = "parallel"
+                ldict['parallel_sdfg'] = parallel_sdfg
+                _, ptime1 = util.benchmark("parallelize(parallel_sdfg)",
+                                           out_text="DaCe LoopToMap time1",
+                                           context=locals(),
+                                           verbose=False)
+                _, ptime2 = util.benchmark("parallel_sdfg.apply_transformations_repeated([MapFusion])",
+                                           out_text="DaCe LoopToMap time2",
+                                           context=locals(),
+                                           verbose=False)
+                # sdfg_list.append(parallel_sdfg)
+                # time_list.append(time_list[-1] + ptime1[0] + ptime2[0])
 
-        except Exception as e:
+        except (Exception, tout.StageTimeout) as e:
             print("DaCe LoopToMap failed")
             print(e)
             parallel_sdfg = copy.deepcopy(fusion_sdfg)
@@ -236,25 +245,122 @@ class DaceFramework(Framework):
                 # Auto-optimize SDFG
                 opt.auto_optimize(auto_opt_sdfg, device, symbols=symbols, use_gpu_storage=True)
 
-            auto_opt_sdfg = copy.deepcopy(strict_sdfg)
-            auto_opt_sdfg._name = 'auto_opt'
-            ldict['auto_opt_sdfg'] = auto_opt_sdfg
-            device = dtypes.DeviceType.GPU if self.info["arch"] == "gpu" else dtypes.DeviceType.CPU
+            with tout.time_limit(self.timeout, "DaCe auto_opt variant build"):
+                auto_opt_sdfg = copy.deepcopy(strict_sdfg)
+                auto_opt_sdfg._name = 'auto_opt'
+                ldict['auto_opt_sdfg'] = auto_opt_sdfg
+                device = dtypes.DeviceType.GPU if self.info["arch"] == "gpu" else dtypes.DeviceType.CPU
 
-            _, auto_time = util.benchmark(f"autoopt(auto_opt_sdfg, device, symbols = locals())",
-                                          out_text="DaCe Auto - Opt",
-                                          context=locals(),
-                                          verbose=False)
+                _, auto_time = util.benchmark(f"autoopt(auto_opt_sdfg, device, symbols = locals())",
+                                              out_text="DaCe Auto - Opt",
+                                              context=locals(),
+                                              verbose=False)
 
-            sdfg_list.append(auto_opt_sdfg)
-            time_list.append(time_list[-1] + auto_time[0])
+                sdfg_list.append(auto_opt_sdfg)
+                time_list.append(time_list[-1] + auto_time[0])
 
-        except Exception as e:
+        except (Exception, tout.StageTimeout) as e:
             print("DaCe autoopt failed")
             # print(e)
             # traceback.print_exc()
             auto_opt_sdfg = copy.deepcopy(strict_sdfg)
             ldict['auto_opt_sdfg'] = auto_opt_sdfg
+
+        ###########################################################
+        # Tile-op vectorization tracks (GPU only): the K-dim masked tile-op
+        # vectorizer (the VectorizeCuTile core) lowered through the C++ CUDA
+        # backend with 'pure' tile expansions. Two tracks: plain vectorize
+        # (vec_<w>) and canonicalize-then-vectorize (canon_vec_<w>), at the 1-D
+        # cutile widths. Vectorization happens here at seed time; the GPU block
+        # below then rides copy_to_gpu + GPU transforms + MapFusion +
+        # set_fast_implementations like every other variant.
+
+        def vectorize_tileops(sdfg: dace.SDFG, width: int) -> int:
+            # K-dim masked tile-op vectorizer, lowered for the C++ CUDA backend:
+            # 'pure' tile expansions are plain per-lane C++ loops that compile as
+            # device code. ISA impls ('scalar'/'avx*') call host-only headers and
+            # must not be used; target_isa='SCALAR' + the explicit 'pure'
+            # overwrite below is the verified-safe combination.
+            from dace.transformation.passes.vectorization.vectorize_cpu_multi_dim import (
+                VectorizeCPUMultiDim, _TILE_NODE_TYPES)
+            from dace.transformation.passes.vectorization.remove_unused_per_lane_symbols import (
+                RemoveUnusedPerLaneSymbols)
+            VectorizeCPUMultiDim(widths=(width, ), target_isa="SCALAR",
+                                 expand_tile_nodes=False).apply_pass(sdfg, {})
+            tiles = [n for n, _ in sdfg.all_nodes_recursive() if isinstance(n, _TILE_NODE_TYPES)]
+            if not tiles:
+                return 0
+            for t in tiles:
+                t.implementation = 'pure'
+            # Expand ONLY tile nodes: lifted Einsum/Reduce/MatMul stay unexpanded
+            # so the GPU block's set_fast_implementations re-stamps them for GPU
+            # (the vectorizer finalized them for CPU).
+            sdfg.expand_library_nodes(predicate=lambda n: isinstance(n, _TILE_NODE_TYPES))
+            RemoveUnusedPerLaneSymbols().apply_pass(sdfg, {})
+            return len(tiles)
+
+        # vectorize_tileops mutates its SDFG in place and is NOT idempotent, so
+        # it must be called directly — never via util.benchmark with output=,
+        # which execs the statement twice (once to time, once for the result)
+        # and would double-vectorize (yielding broken `auto N = N` codegen).
+        # Timing here is print-only (never reaches the DB), so a plain timer.
+        import time as _time
+        if self.info["arch"] == "gpu":
+            vec_widths = [512, 256, 128, 64, 32]  # the 1-D cutile sweep
+            for w in vec_widths:
+                try:
+                    with tout.time_limit(self.timeout, f"DaCe vec_{w} variant build"):
+                        vec_sdfg = copy.deepcopy(strict_sdfg)
+                        vec_sdfg._name = f"vec_{w}"
+                        _t0 = _time.perf_counter()
+                        ntiles = vectorize_tileops(vec_sdfg, w)
+                        vec_elapsed = _time.perf_counter() - _t0
+                        print(f"DaCe vec_{w} vectorize time: {vec_elapsed * 1000:.0f}ms")
+                        if ntiles == 0:
+                            print(f"DaCe vec_{w}: nothing vectorized, skipping")
+                            continue
+                        sdfg_list.append(vec_sdfg)
+                        time_list.append(parse_time[0] + vec_elapsed)
+                except (Exception, tout.StageTimeout) as e:
+                    print(f"DaCe vec_{w} failed: {e}")
+
+            cv_base = None
+            cv_time = 0.0
+            try:
+                from dace.transformation.passes.vectorization import VectorizeCuTile
+                cv_base = copy.deepcopy(strict_sdfg)
+                # canonicalize_for_cutile, NOT a copy of canon_sdfg: the default
+                # assumption_guard trips C++ codegen after vectorization ("use of
+                # 'M' before deduction of 'auto'"), and this knob row is the one
+                # the vectorizer is tested against. Width-independent -> run once,
+                # deepcopy per width. Called directly (mutates in place).
+                _t0 = _time.perf_counter()
+                with tout.time_limit(self.timeout, "DaCe canon_vec canonicalize"):
+                    VectorizeCuTile.canonicalize_for_cutile(cv_base)
+                cv_time = _time.perf_counter() - _t0
+                print(f"DaCe canon_vec canonicalize time: {cv_time * 1000:.0f}ms")
+            except (Exception, tout.StageTimeout) as e:
+                cv_base = None
+                print(f"DaCe canon_vec canonicalize failed, skipping all canon_vec variants: {e}")
+            if cv_base is not None:
+                for w in vec_widths:
+                    try:
+                        with tout.time_limit(self.timeout, f"DaCe canon_vec_{w} variant build"):
+                            cv_sdfg = copy.deepcopy(cv_base)
+                            cv_sdfg._name = f"canon_vec_{w}"
+                            _t0 = _time.perf_counter()
+                            ntiles = vectorize_tileops(cv_sdfg, w)
+                            vec_elapsed = _time.perf_counter() - _t0
+                            print(f"DaCe canon_vec_{w} vectorize time: {vec_elapsed * 1000:.0f}ms")
+                            if ntiles == 0:
+                                print(f"DaCe canon_vec_{w}: nothing vectorized, skipping")
+                                continue
+                            sdfg_list.append(cv_sdfg)
+                            time_list.append(parse_time[0] + cv_time + vec_elapsed)
+                    except (Exception, tout.StageTimeout) as e:
+                        print(f"DaCe canon_vec_{w} failed: {e}")
+
+        ###########################################################
 
         def vectorize(sdfg, vec_len=None):
             matches = []
@@ -283,43 +389,48 @@ class DaceFramework(Framework):
         for sdfg, t in zip(sdfg_list, time_list):
             ldict['sdfg'] = sdfg
             fe_time = t
-            if sdfg._name != 'auto_opt':
-                device = dtypes.DeviceType.GPU if self.info["arch"] == "gpu" else dtypes.DeviceType.CPU
-                # if self.info["arch"] == "cpu":
-                #     # GPUTransform will set GPU schedules by itself
-                opt.set_fast_implementations(sdfg, device)
-            if self.info["arch"] == "gpu":
-                if sdfg._name in ['strict', 'parallel', 'fusion', 'canonicalize']:
-                    _, gpu_time1 = util.benchmark("copy_to_gpu(sdfg)",
-                                                  out_text="DaCe GPU transformation time1",
-                                                  context=locals(),
-                                                  verbose=False)
-
-                    _, gpu_time2 = util.benchmark("sdfg.apply_gpu_transformations()",
-                                                  out_text="DaCe GPU transformation time2",
-                                                  context=locals(),
-                                                  verbose=False)
-                    _, gpu_time3 = util.benchmark("sdfg.simplify()",
-                                                  out_text="DaCe GPU transformation time3",
-                                                  context=locals(),
-                                                  verbose=False)
-                    # NOTE: to be fair, allow one additional greedy MapFusion after GPU trafos
-                    _, gpu_time4 = util.benchmark("sdfg.apply_transformations_repeated(MapFusion)",
-                                                  out_text="DaCe GPU transformation time4",
-                                                  context=locals(),
-                                                  verbose=False)
-                    fe_time += gpu_time2[0] + gpu_time3[0] + gpu_time4[0]
-                    opt.set_fast_implementations(sdfg, device)
-                else:
-                    gpu_time1 = [0]
-                fe_time += gpu_time1[0]
             try:
-                dc_exec, compile_time = util.benchmark("__npb_result = sdfg.compile()",
-                                                       out_text="DaCe compilation time",
-                                                       context=locals(),
-                                                       output='__npb_result',
-                                                       verbose=False)
-                implementations.append((dc_exec, sdfg._name))
+                with tout.time_limit(self.timeout, f"DaCe {sdfg._name} GPU transformations + compile"):
+                    if sdfg._name != 'auto_opt':
+                        device = dtypes.DeviceType.GPU if self.info["arch"] == "gpu" else dtypes.DeviceType.CPU
+                        # if self.info["arch"] == "cpu":
+                        #     # GPUTransform will set GPU schedules by itself
+                        opt.set_fast_implementations(sdfg, device)
+                    if self.info["arch"] == "gpu":
+                        if sdfg._name in ['strict', 'parallel', 'fusion', 'canonicalize'] \
+                                or sdfg._name.startswith(('vec_', 'canon_vec_')):
+                            _, gpu_time1 = util.benchmark("copy_to_gpu(sdfg)",
+                                                          out_text="DaCe GPU transformation time1",
+                                                          context=locals(),
+                                                          verbose=False)
+
+                            _, gpu_time2 = util.benchmark("sdfg.apply_gpu_transformations()",
+                                                          out_text="DaCe GPU transformation time2",
+                                                          context=locals(),
+                                                          verbose=False)
+                            _, gpu_time3 = util.benchmark("sdfg.simplify()",
+                                                          out_text="DaCe GPU transformation time3",
+                                                          context=locals(),
+                                                          verbose=False)
+                            # NOTE: to be fair, allow one additional greedy MapFusion after GPU trafos
+                            _, gpu_time4 = util.benchmark("sdfg.apply_transformations_repeated(MapFusion)",
+                                                          out_text="DaCe GPU transformation time4",
+                                                          context=locals(),
+                                                          verbose=False)
+                            fe_time += gpu_time2[0] + gpu_time3[0] + gpu_time4[0]
+                            opt.set_fast_implementations(sdfg, device)
+                        else:
+                            gpu_time1 = [0]
+                        fe_time += gpu_time1[0]
+                    dc_exec, compile_time = util.benchmark("__npb_result = sdfg.compile()",
+                                                           out_text="DaCe compilation time",
+                                                           context=locals(),
+                                                           output='__npb_result',
+                                                           verbose=False)
+                    implementations.append((dc_exec, sdfg._name))
+            except tout.StageTimeout as e:
+                print(e)
+                continue
             except Exception as e:
                 print("Failed to compile DaCe {a} {s} implementation.".format(a=self.info["arch"], s=sdfg._name))
                 print(e)
@@ -371,8 +482,9 @@ class DaceFramework(Framework):
         from dace.transformation.passes.vectorization import VectorizeCuTile
 
         try:
-            base_sdfg = func.to_sdfg(simplify=False)
-        except Exception as e:
+            with tout.time_limit(self.timeout, f"[dace_cutile] to_sdfg for {func_str}"):
+                base_sdfg = func.to_sdfg(simplify=False)
+        except (Exception, tout.StageTimeout) as e:
             print(f"  [dace_cutile] to_sdfg failed for {func_str}: {e}")
             return []
 
@@ -432,26 +544,28 @@ class DaceFramework(Framework):
         results = []
         for label, prep in tracks:
             try:
-                prepped = copy.deepcopy(base_sdfg)
-                prepped._name = f"{prepped.name}_{label}"  # distinct build dirs
-                prep(prepped)
-            except Exception as e:
+                with tout.time_limit(self.timeout, f"[dace_cutile] {label} front-end"):
+                    prepped = copy.deepcopy(base_sdfg)
+                    prepped._name = f"{prepped.name}_{label}"  # distinct build dirs
+                    prep(prepped)
+            except (Exception, tout.StageTimeout) as e:
                 print(f"  [dace_cutile] {label} front-end failed for {func_str}: {e}")
                 continue
             for widths in width_configs:
                 if len(widths) > max_ndim:
                     continue  # dimensionality mismatch -> skip
                 try:
-                    sdfg_copy = copy.deepcopy(prepped)
-                    self._lower_cutile(sdfg_copy, widths)
-                    width_str = "x".join(str(w) for w in widths)
-                    # Distinct build dir per (track, width): prepped.name already
-                    # carries the track label, width_str ('x'-joined digits) keeps
-                    # the name a valid SDFG identifier (e.g. atax_canon_32x32).
-                    sdfg_copy._name = f"{prepped.name}_{width_str}"
-                    csdfg = sdfg_copy.compile()
-                    results.append((csdfg, f"cutile_{label}_{width_str}"))
-                except Exception as e:
+                    with tout.time_limit(self.timeout, f"[dace_cutile] {label} widths={widths}"):
+                        sdfg_copy = copy.deepcopy(prepped)
+                        self._lower_cutile(sdfg_copy, widths)
+                        width_str = "x".join(str(w) for w in widths)
+                        # Distinct build dir per (track, width): prepped.name already
+                        # carries the track label, width_str ('x'-joined digits) keeps
+                        # the name a valid SDFG identifier (e.g. atax_canon_32x32).
+                        sdfg_copy._name = f"{prepped.name}_{width_str}"
+                        csdfg = sdfg_copy.compile()
+                        results.append((csdfg, f"cutile_{label}_{width_str}"))
+                except (Exception, tout.StageTimeout) as e:
                     print(f"  [dace_cutile] {label} widths={widths} failed for {func_str}: {e}")
 
         return results
