@@ -1,9 +1,7 @@
 # Copyright 2021 ETH Zurich and the NPBench authors. All rights reserved.
-import contextlib
 import importlib
 import os
 import pkg_resources
-import signal
 import traceback
 
 import dace
@@ -276,11 +274,19 @@ class DaceFramework(Framework):
         # set_fast_implementations like every other variant.
 
         def vectorize_tileops(sdfg: dace.SDFG, width: int) -> int:
+            """ Vectorize a seed SDFG with the K-dim masked tile-op track.
+
+            :param sdfg: SDFG to vectorize in place.
+            :param width: 1-D cutile tile width (power of 2).
+            :returns: number of tile nodes created (0 = nothing vectorized).
+            """
             # K-dim masked tile-op vectorizer, lowered for the C++ CUDA backend:
             # 'pure' tile expansions are plain per-lane C++ loops that compile as
             # device code. ISA impls ('scalar'/'avx*') call host-only headers and
             # must not be used; target_isa='SCALAR' + the explicit 'pure'
             # overwrite below is the verified-safe combination.
+            # _TILE_NODE_TYPES must cover every node type VectorizeCPUMultiDim can
+            # emit; a missing type would stay 'scalar'-stamped and fail nvcc.
             from dace.transformation.passes.vectorization.vectorize_cpu_multi_dim import (
                 VectorizeCPUMultiDim, _TILE_NODE_TYPES)
             from dace.transformation.passes.vectorization.remove_unused_per_lane_symbols import (
@@ -299,17 +305,18 @@ class DaceFramework(Framework):
             RemoveUnusedPerLaneSymbols().apply_pass(sdfg, {})
             return len(tiles)
 
-        # vectorize_tileops mutates its SDFG in place and is NOT idempotent, so
-        # it must be called directly — never via util.benchmark with output=,
-        # which execs the statement twice (once to time, once for the result)
-        # and would double-vectorize (yielding broken `auto N = N` codegen).
-        # Timing here is print-only (never reaches the DB), so a plain timer.
-        import time as _time
         if self.info["arch"] == "gpu":
+            # vectorize_tileops mutates its SDFG in place and is NOT idempotent,
+            # so it must be called directly — never via util.benchmark with
+            # output=, which execs the statement twice (once to time, once for
+            # the result) and would double-vectorize (yielding broken
+            # `auto N = N` codegen). Timing here is print-only (never reaches the
+            # DB), so a plain timer.
+            import time as _time
             vec_widths = [512, 256, 128, 64, 32]  # the 1-D cutile sweep
             for w in vec_widths:
                 try:
-                    with tout.time_limit(self.timeout, f"DaCe vec_{w} variant build"):
+                    with tout.time_limit(self.timeout, f"DaCe vec_{w} seed (vectorize)"):
                         vec_sdfg = copy.deepcopy(strict_sdfg)
                         vec_sdfg._name = f"vec_{w}"
                         _t0 = _time.perf_counter()
@@ -328,7 +335,6 @@ class DaceFramework(Framework):
             cv_time = 0.0
             try:
                 from dace.transformation.passes.vectorization import VectorizeCuTile
-                cv_base = copy.deepcopy(strict_sdfg)
                 # canonicalize_for_cutile, NOT a copy of canon_sdfg: the default
                 # assumption_guard trips C++ codegen after vectorization ("use of
                 # 'M' before deduction of 'auto'"), and this knob row is the one
@@ -336,6 +342,7 @@ class DaceFramework(Framework):
                 # deepcopy per width. Called directly (mutates in place).
                 _t0 = _time.perf_counter()
                 with tout.time_limit(self.timeout, "DaCe canon_vec canonicalize"):
+                    cv_base = copy.deepcopy(strict_sdfg)
                     VectorizeCuTile.canonicalize_for_cutile(cv_base)
                 cv_time = _time.perf_counter() - _t0
                 print(f"DaCe canon_vec canonicalize time: {cv_time * 1000:.0f}ms")
@@ -345,7 +352,7 @@ class DaceFramework(Framework):
             if cv_base is not None:
                 for w in vec_widths:
                     try:
-                        with tout.time_limit(self.timeout, f"DaCe canon_vec_{w} variant build"):
+                        with tout.time_limit(self.timeout, f"DaCe canon_vec_{w} seed (vectorize)"):
                             cv_sdfg = copy.deepcopy(cv_base)
                             cv_sdfg._name = f"canon_vec_{w}"
                             _t0 = _time.perf_counter()
