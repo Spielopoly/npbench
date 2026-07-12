@@ -220,8 +220,8 @@ class DaceFramework(Framework):
                                            out_text="DaCe LoopToMap time2",
                                            context=locals(),
                                            verbose=False)
-                # sdfg_list.append(parallel_sdfg)
-                # time_list.append(time_list[-1] + ptime1[0] + ptime2[0])
+                sdfg_list.append(parallel_sdfg)
+                time_list.append(time_list[-1] + ptime1[0] + ptime2[0])
 
         except (Exception, tout.StageTimeout) as e:
             print("DaCe LoopToMap failed")
