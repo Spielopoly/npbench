@@ -34,10 +34,7 @@ class DaceFramework(Framework):
     def copy_func(self) -> Callable:
         """ Returns the copy-method that should be used
         for copying the benchmark arguments. """
-        if self.fname == "dace_cutile":
-            # cuTile compiled SDFGs accept host arrays; copy states handle H2D/D2H
-            return super().copy_func()
-        if self.fname == "dace_gpu":
+        if self.fname in ("dace_cutile", "dace_gpu"):
             import cupy
 
             def cp_copy_func(arr):
@@ -465,8 +462,9 @@ class DaceFramework(Framework):
                              recorded as ``cutile_parallel_<w>``.
           - ``autoopt_cpu``: ``auto_optimize(DeviceType.CPU, expand=False)``,
                              recorded as ``cutile_autoopt_cpu_<w>``.
-          - ``autoopt_gpu``: ``auto_optimize(DeviceType.GPU, expand=False)``,
-                             recorded as ``cutile_autoopt_gpu_<w>`` (speculative;
+          - ``autoopt_gpu``: ``auto_optimize(DeviceType.GPU, expand=False,
+                             use_gpu_storage=True)``, recorded as
+                             ``cutile_autoopt_gpu_<w>`` (speculative;
                              see prep_autoopt_gpu).
 
         Each track is wrapped in its own try/except so one failing front-end
@@ -534,12 +532,13 @@ class DaceFramework(Framework):
             opt.auto_optimize(sdfg, dtypes.DeviceType.CPU, expand=False)
 
         def prep_autoopt_gpu(sdfg: dace.SDFG) -> None:
-            # Speculative track (user-requested). auto_optimize(GPU) already
-            # GPU-schedules and inserts host<->device copies; VectorizeCuTile
+            # Speculative track (user-requested). auto_optimize(GPU) with
+            # use_gpu_storage=True GPU-schedules with args marked GPU_Global,
+            # so no host<->device copy states are inserted; VectorizeCuTile
             # step 3 re-runs GPUTransformSDFG, which is near-idempotent.
             # The vectorizer was designed for CPU-form input and may not fire on
             # GPU-form input — a failed/empty track is an accepted data point.
-            opt.auto_optimize(sdfg, dtypes.DeviceType.GPU, expand=False)
+            opt.auto_optimize(sdfg, dtypes.DeviceType.GPU, expand=False, use_gpu_storage=True)
 
         tracks = [
             ("canon", prep_canon),
@@ -585,12 +584,15 @@ class DaceFramework(Framework):
         each track in ``_cutile_implementations`` does its own front-end prep
         before calling this, so the built-in canonicalize step must not re-run.
 
+        ``use_gpu_storage=True`` makes the compiled variants take device (cupy)
+        arrays directly; H2D/D2H happens untimed via ``copy_func``.
+
         :param sdfg: The SDFG to lower (modified in place).
         :param widths: Tile widths (must be powers of 2).
         """
         from dace.transformation.passes.vectorization import VectorizeCuTile
 
-        VectorizeCuTile(widths=widths, run_canonicalize=False).apply_pass(sdfg, {})
+        VectorizeCuTile(widths=widths, run_canonicalize=False, use_gpu_storage=True).apply_pass(sdfg, {})
 
     def params(self, bench: Benchmark, impl: Callable = None):
         return [p for p in bench.info["parameters"]['L'].keys() if p not in bench.info["input_args"]]
