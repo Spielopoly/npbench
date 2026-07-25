@@ -32,9 +32,9 @@ def getAcc(pos: dc.float64[N, 3], mass: dc.float64[N], G: dc.float64,
     a is N x 3 matrix of accelerations
     """
     # positions r = [x,y,z] for all particles
-    x = pos[:, 0:1]
-    y = pos[:, 1:2]
-    z = pos[:, 2:3]
+    x = pos[:, 0]
+    y = pos[:, 1]
+    z = pos[:, 2]
 
     # matrix that stores all pairwise particle separations: r_j - r_i
     # dx = x.T - x
@@ -88,9 +88,9 @@ def getEnergy(pos: dc.float64[N, 3], vel: dc.float64[N, 3],
     # Potential Energy:
 
     # positions r = [x,y,z] for all particles
-    x = pos[:, 0:1]
-    y = pos[:, 1:2]
-    z = pos[:, 2:3]
+    x = pos[:, 0]
+    y = pos[:, 1]
+    z = pos[:, 2]
 
     # matrix that stores all pairwise particle separations: r_j - r_i
     # dx = x.T - x
