@@ -5,7 +5,7 @@ W, H = (dc.symbol(s, dtype=dc.int64) for s in ('W', 'H'))
 
 
 @dc.program
-def kernel(alpha: dc.float64, imgIn: dc.float64[W, H]):
+def kernel(alpha: dc.float32, imgIn: dc.float32[W, H]):
 
     k = (1.0 - np.exp(-alpha)) * (1.0 - np.exp(-alpha)) / (
         1.0 + alpha * np.exp(-alpha) - np.exp(2.0 * alpha))

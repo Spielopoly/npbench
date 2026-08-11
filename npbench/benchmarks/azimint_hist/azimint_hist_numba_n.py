@@ -40,7 +40,7 @@ import numba as nb
 
 @nb.jit(nopython=True, parallel=False, fastmath=True)
 def get_bin_edges(a, bins):
-    bin_edges = np.zeros((bins + 1, ), dtype=np.float64)
+    bin_edges = np.zeros((bins + 1, ), dtype=np.float32)
     a_min = a.min()
     a_max = a.max()
     delta = (a_max - a_min) / bins

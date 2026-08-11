@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # Initialization
     NI, NJ, NK, NL = 1000, 1000, 1000, 1000
-    alpha, beta, tmp, A, B, C, D = init_data(NI, NJ, NK, NL, np.float64)
+    alpha, beta, tmp, A, B, C, D = init_data(NI, NJ, NK, NL, np.float32)
     lg_D = np.copy(D)
 
     # First execution

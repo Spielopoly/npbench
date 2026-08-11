@@ -19,38 +19,38 @@ def mgrid(X: dc.int64[M, N], Y: dc.int64[M, N]):
 
 
 @dc.program
-def linspace(start: dc.float64, stop: dc.float64, X: dc.float64[N]):
+def linspace(start: dc.float32, stop: dc.float32, X: dc.float32[N]):
     dist = (stop - start) / (N - 1)
     for i in dace.map[0:N]:
         X[i] = start + i * dist
 
 
 @dc.program
-def mandelbrot(xmin: dc.float64, xmax: dc.float64, ymin: dc.float64,
-               ymax: dc.float64, maxiter: dc.int64, horizon: dc.float64):
+def mandelbrot(xmin: dc.float32, xmax: dc.float32, ymin: dc.float32,
+               ymax: dc.float32, maxiter: dc.int64, horizon: dc.float32):
     # Adapted from
     # https://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
     Xi = np.ndarray((XN, YN), dtype=np.int64)
     Yi = np.ndarray((XN, YN), dtype=np.int64)
     mgrid(Xi, Yi)
-    X = np.ndarray((XN, ), dtype=np.float64)
-    Y = np.ndarray((YN, ), dtype=np.float64)
+    X = np.ndarray((XN, ), dtype=np.float32)
+    Y = np.ndarray((YN, ), dtype=np.float32)
     linspace(xmin, xmax, X)
     linspace(ymin, ymax, Y)
     # C = np.reshape(X, (xn, 1)) + Y * 1j
-    C = np.ndarray((XN, YN), dtype=np.complex128)
+    C = np.ndarray((XN, YN), dtype=np.complex64)
     for i, j in dc.map[0:XN, 0:YN]:
         C[i, j] = X[i] + Y[j] * 1j
     N_ = np.zeros(C.shape, dtype=np.int64)
-    Z_ = np.zeros(C.shape, dtype=np.complex128)
+    Z_ = np.zeros(C.shape, dtype=np.complex64)
     # Xiv = np.ndarray((XN * YN,), dtype=np.int64)
     Xiv = np.reshape(Xi, (XN * YN, ))
     # Yiv = np.ndarray((XN * YN,), dtype=np.int64)
     Yiv = np.reshape(Yi, (XN * YN, ))
-    # Cv = np.ndarray((XN * YN,), dtype=np.complex128)
+    # Cv = np.ndarray((XN * YN,), dtype=np.complex64)
     Cv = np.reshape(C, (XN * YN, ))
 
-    Z = np.zeros(Cv.shape, np.complex128)
+    Z = np.zeros(Cv.shape, np.complex64)
     I = np.ndarray((XN * YN, ), dtype=np.bool_)
     length = XN * YN
     k = 0

@@ -5,7 +5,7 @@ N = dc.symbol('N', dtype=dc.int64)
 
 
 @dc.program
-def kernel(A: dc.float64[N, N], b: dc.float64[N]):
+def kernel(A: dc.float32[N, N], b: dc.float32[N]):
 
     x = np.zeros_like(b)
     y = np.zeros_like(b)

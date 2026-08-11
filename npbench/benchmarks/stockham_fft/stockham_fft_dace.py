@@ -27,7 +27,7 @@ def mgrid2(X: dc.uint32[R, N], Y: dc.uint32[R, N]):
 
 
 @dc.program
-def stockham_fft(x: dc.complex128[R**K], y: dc.complex128[R**K]):
+def stockham_fft(x: dc.complex64[R**K], y: dc.complex64[R**K]):
 
     # Generate DFT matrix for radix R.
     # Define transient variable for matrix.
@@ -35,7 +35,7 @@ def stockham_fft(x: dc.complex128[R**K], y: dc.complex128[R**K]):
     i_coord = np.ndarray((R, R), dtype=np.uint32)
     j_coord = np.ndarray((R, R), dtype=np.uint32)
     mgrid1(i_coord, j_coord)
-    dft_mat = np.empty((R, R), dtype=np.complex128)
+    dft_mat = np.empty((R, R), dtype=np.complex64)
     dft_mat[:] = np.exp(-2.0j * np.pi * i_coord * j_coord / R)
     # Move input x to output y
     # to avoid overwriting the input.
@@ -58,7 +58,7 @@ def stockham_fft(x: dc.complex128[R**K], y: dc.complex128[R**K]):
         # tmp_perm = np.transpose(yv, axes=(1, 0, 2))
         tmp_perm[:] = np.reshape(np.transpose(yv, axes=(1, 0, 2)), (N, ))
         # Twiddle Factor multiplication
-        # D = np.empty((R, R ** i, R ** (K-i-1)), dtype=np.complex128)
+        # D = np.empty((R, R ** i, R ** (K-i-1)), dtype=np.complex64)
         Dv = np.reshape(D, (R, R**i, R**(K - i - 1)))
         tmpv = np.reshape(tmp, (R**(K - i - 1), R, R**i))
         tmpv[0] = np.exp(-2.0j * np.pi * ii_coord[:, :R**i] *

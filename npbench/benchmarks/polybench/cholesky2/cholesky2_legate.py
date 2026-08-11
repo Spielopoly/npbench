@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # Initialization
     N = 1000
-    A = init_data(N, np.float64)
+    A = init_data(N, np.float32)
     lg_A = np.copy(A)
     lg_A2 = np.copy(A)
 

@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     # Initialization
     W, H = 1000, 1000
-    alpha, imgIn, imgOut, y1, y2 = init_data(W, H, np.float64)
+    alpha, imgIn, imgOut, y1, y2 = init_data(W, H, np.float32)
 
     # First execution
     np_imgOut = np_impl.kernel(alpha, imgIn)

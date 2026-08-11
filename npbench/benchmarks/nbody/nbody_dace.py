@@ -13,16 +13,16 @@ Code calculates pairwise forces according to Newton's Law of Gravity
 N, Nt = (dc.symbol(s, dtype=dc.int64) for s in ('N', 'Nt'))
 
 # @dc.program
-# def hstack(out: dc.float64[N, 3], a: dc.float64[N],
-#            b: dc.float64[N], c: dc.float64[N]):
+# def hstack(out: dc.float32[N, 3], a: dc.float32[N],
+#            b: dc.float32[N], c: dc.float32[N]):
 #     out[:, 0] = a
 #     out[:, 1] = b
 #     out[:, 2] = c
 
 
 @dc.program
-def getAcc(pos: dc.float64[N, 3], mass: dc.float64[N], G: dc.float64,
-           softening: dc.float64):
+def getAcc(pos: dc.float32[N, 3], mass: dc.float32[N], G: dc.float32,
+           softening: dc.float32):
     """
     Calculate the acceleration on each particle due to Newton's Law 
     pos  is an N x 3 matrix of positions
@@ -59,7 +59,7 @@ def getAcc(pos: dc.float64[N, 3], mass: dc.float64[N], G: dc.float64,
 
     # pack together the acceleration components
     # a = np.hstack((ax,ay,az))
-    a = np.ndarray((N, 3), dtype=np.float64)
+    a = np.ndarray((N, 3), dtype=np.float32)
     # hstack(a, ax, ay, az)
     a[:, 0] = ax
     a[:, 1] = ay
@@ -69,8 +69,8 @@ def getAcc(pos: dc.float64[N, 3], mass: dc.float64[N], G: dc.float64,
 
 
 @dc.program
-def getEnergy(pos: dc.float64[N, 3], vel: dc.float64[N, 3],
-              mass: dc.float64[N], G: dc.float64):
+def getEnergy(pos: dc.float32[N, 3], vel: dc.float32[N, 3],
+              mass: dc.float32[N], G: dc.float32):
     """
     Get kinetic energy (KE) and potential energy (PE) of simulation
     pos is N x 3 matrix of positions
@@ -123,8 +123,8 @@ def getEnergy(pos: dc.float64[N, 3], vel: dc.float64[N, 3],
 
 
 @dc.program
-def nbody(mass: dc.float64[N], pos: dc.float64[N, 3], vel: dc.float64[N, 3],
-          dt: dc.float64, G: dc.float64, softening: dc.float64):
+def nbody(mass: dc.float32[N], pos: dc.float32[N, 3], vel: dc.float32[N, 3],
+          dt: dc.float32, G: dc.float32, softening: dc.float32):
 
     # Convert to Center-of-Mass frame
     # vel -= np.mean(mass * vel, axis=0) / np.mean(mass)
@@ -139,8 +139,8 @@ def nbody(mass: dc.float64[N], pos: dc.float64[N, 3], vel: dc.float64[N, 3],
     acc = getAcc(pos, mass, G, softening)
 
     # calculate initial energy of system
-    KE = np.ndarray(Nt + 1, dtype=np.float64)
-    PE = np.ndarray(Nt + 1, dtype=np.float64)
+    KE = np.ndarray(Nt + 1, dtype=np.float32)
+    PE = np.ndarray(Nt + 1, dtype=np.float32)
     KE[0], PE[0] = getEnergy(pos, vel, mass, G)
 
     t = 0.0

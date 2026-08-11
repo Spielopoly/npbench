@@ -5,7 +5,7 @@ NR, NQ, NP = (dc.symbol(s, dtype=dc.int64) for s in ('NR', 'NQ', 'NP'))
 
 
 @dc.program
-def kernel(A: dc.float64[NR, NQ, NP], C4: dc.float64[NP, NP]):
+def kernel(A: dc.float32[NR, NQ, NP], C4: dc.float32[NP, NP]):
 
     # Ideal - not working becayse Matmul with dim > 3 unsupported
     # A[:] = np.reshape(np.reshape(A, (NR, NQ, 1, NP)) @ C4, (NR, NQ, NP))

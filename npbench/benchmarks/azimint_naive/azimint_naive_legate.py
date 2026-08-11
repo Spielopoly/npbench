@@ -13,7 +13,7 @@ import legate.numpy as np
 
 def azimint_naive(data, radius, npt):
     rmax = radius.max()
-    res = np.zeros(npt, dtype=np.float64)
+    res = np.zeros(npt, dtype=np.float32)
     for i in range(npt):
         r1 = rmax * i / npt
         r2 = rmax * (i + 1) / npt

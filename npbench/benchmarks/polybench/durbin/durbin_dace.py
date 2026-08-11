@@ -5,15 +5,15 @@ M, N = (dc.symbol(s, dtype=dc.int64) for s in ('M', 'N'))
 
 
 @dc.program
-def flip(A: dc.float64[M]):
-    B = np.ndarray((M, ), dtype=np.float64)
+def flip(A: dc.float32[M]):
+    B = np.ndarray((M, ), dtype=np.float32)
     for i in dc.map[0:M]:
         B[i] = A[M - 1 - i]
     return B
 
 
 @dc.program
-def kernel(r: dc.float64[N]):
+def kernel(r: dc.float32[N]):
 
     y = np.empty_like(r)
     alpha = -r[0]

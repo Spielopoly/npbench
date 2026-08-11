@@ -4,7 +4,7 @@ import numpy as np
 
 # Matrix-Vector Multiplication with the matrix given in Compressed Sparse Row
 # (CSR) format
-# pythran export spmv(uint32[:], uint32[:], float64[:], float64[:])
+# pythran export spmv(uint32[:], uint32[:], float32[:], float32[:])
 def spmv(A_row, A_col, A_val, x):
     y = np.empty(A_row.size - 1, A_val.dtype)
 

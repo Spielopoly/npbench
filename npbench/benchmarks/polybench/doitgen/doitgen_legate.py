@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # Initialization
     NR, NQ, NP = 10, 10, 1000
-    A, C4, sum = init_data(NR, NQ, NP, np.float64)
+    A, C4, sum = init_data(NR, NQ, NP, np.float32)
     np_A = onp.copy(A)
     lg_A = onp.copy(A)
 

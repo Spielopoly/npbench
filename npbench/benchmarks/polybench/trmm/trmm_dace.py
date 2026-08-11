@@ -4,12 +4,12 @@ import dace as dc
 M, N, S = (dc.symbol(s, dtype=dc.int64) for s in ('M', 'N', 'S'))
 
 # @dc.program
-# def dot(l: dc.float64[S], r: dc.float64[S]):
+# def dot(l: dc.float32[S], r: dc.float32[S]):
 #     return np.add.reduce(np.multiply(l, r))
 
 
 @dc.program
-def kernel(alpha: dc.float64, A: dc.float64[M, M], B: dc.float64[M, N]):
+def kernel(alpha: dc.float32, A: dc.float32[M, M], B: dc.float32[M, N]):
 
     for i in range(M):
         for j in range(N):

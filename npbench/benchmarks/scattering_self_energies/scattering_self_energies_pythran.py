@@ -4,8 +4,8 @@ import numpy as np
 
 
 # pythran export scattering_self_energies(
-#     int32[:,:], complex128[:,:,:,:,:], complex128[:,:,:,:,:],
-#     complex128[:,:,:,:,:,:], complex128[:,:,:,:,:])
+#     int32[:,:], complex64[:,:,:,:,:], complex64[:,:,:,:,:],
+#     complex64[:,:,:,:,:,:], complex64[:,:,:,:,:])
 def scattering_self_energies(neigh_idx, dH, G, D, Sigma):
 
     for k in range(G.shape[0]):

@@ -33,8 +33,8 @@ N = dc.symbol('N', dtype=dc.int64)
 
 
 @dc.program
-def arc_distance(theta_1: dc.float64[N], phi_1: dc.float64[N],
-                 theta_2: dc.float64[N], phi_2: dc.float64[N]):
+def arc_distance(theta_1: dc.float32[N], phi_1: dc.float32[N],
+                 theta_2: dc.float32[N], phi_2: dc.float32[N]):
     """
     Calculates the pairwise arc distance between all points in vector a and b.
     """

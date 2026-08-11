@@ -33,21 +33,21 @@ def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, itermax, horizon=2.0):
     # Adapted from
     # https://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
     # Xi, Yi = np.mgrid[0:xn, 0:yn]
-    # X = np.linspace(xmin, xmax, xn, dtype=np.float64)[Xi]
-    # Y = np.linspace(ymin, ymax, yn, dtype=np.float64)[Yi]
+    # X = np.linspace(xmin, xmax, xn, dtype=np.float32)[Xi]
+    # Y = np.linspace(ymin, ymax, yn, dtype=np.float32)[Yi]
     Xi, Yi = mgrid(xn, yn)
-    X = linspace(xmin, xmax, xn, dtype=np.float64)
-    Y = linspace(ymin, ymax, yn, dtype=np.float64)
+    X = linspace(xmin, xmax, xn, dtype=np.float32)
+    Y = linspace(ymin, ymax, yn, dtype=np.float32)
     # C = X + Y*1j
     C = np.reshape(X, (xn, 1)) + Y * 1j
     N_ = np.zeros(C.shape, dtype=np.int64)
-    Z_ = np.zeros(C.shape, dtype=np.complex128)
+    Z_ = np.zeros(C.shape, dtype=np.complex64)
     # Xi.shape = Yi.shape = C.shape = xn*yn
     Xi = np.reshape(Xi, (xn * yn))
     Yi = np.reshape(Yi, (xn * yn))
     C = np.reshape(C, (xn * yn))
 
-    Z = np.zeros(C.shape, np.complex128)
+    Z = np.zeros(C.shape, np.complex64)
     for i in range(itermax):
         if not len(Z):
             break
@@ -117,21 +117,21 @@ def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, itermax, horizon=2.0):
 #     # Adapted from
 #     # https://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
 #     # Xi, Yi = np.mgrid[0:xn, 0:yn]
-#     # X = np.linspace(xmin, xmax, xn, dtype=np.float64)[Xi]
-#     # Y = np.linspace(ymin, ymax, yn, dtype=np.float64)[Yi]
+#     # X = np.linspace(xmin, xmax, xn, dtype=np.float32)[Xi]
+#     # Y = np.linspace(ymin, ymax, yn, dtype=np.float32)[Yi]
 #     Xi, Yi = mgrid_parallel(xn, yn)
-#     X = linspace_parallel(xmin, xmax, xn, dtype=np.float64)
-#     Y = linspace_parallel(ymin, ymax, yn, dtype=np.float64)
+#     X = linspace_parallel(xmin, xmax, xn, dtype=np.float32)
+#     Y = linspace_parallel(ymin, ymax, yn, dtype=np.float32)
 #     # C = X + Y*1j
 #     C = np.reshape(X, (xn, 1)) + Y * 1j
 #     N_ = np.zeros(C.shape, dtype=np.int64)
-#     Z_ = np.zeros(C.shape, dtype=np.complex128)
+#     Z_ = np.zeros(C.shape, dtype=np.complex64)
 #     # Xi.shape = Yi.shape = C.shape = xn*yn
 #     Xi = np.reshape(Xi, (xn*yn))
 #     Yi = np.reshape(Yi, (xn*yn))
 #     C = np.reshape(C, (xn*yn))
 
-#     Z = np.zeros(C.shape, np.complex128)
+#     Z = np.zeros(C.shape, np.complex64)
 #     for i in range(itermax):
 #         if not len(Z):
 #             break
@@ -164,21 +164,21 @@ def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, itermax, horizon=2.0):
 #     # Adapted from
 #     # https://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
 #     # Xi, Yi = np.mgrid[0:xn, 0:yn]
-#     # X = np.linspace(xmin, xmax, xn, dtype=np.float64)[Xi]
-#     # Y = np.linspace(ymin, ymax, yn, dtype=np.float64)[Yi]
+#     # X = np.linspace(xmin, xmax, xn, dtype=np.float32)[Xi]
+#     # Y = np.linspace(ymin, ymax, yn, dtype=np.float32)[Yi]
 #     Xi, Yi = mgrid_prange(xn, yn)
-#     X = linspace_prange(xmin, xmax, xn, dtype=np.float64)
-#     Y = linspace_prange(ymin, ymax, yn, dtype=np.float64)
+#     X = linspace_prange(xmin, xmax, xn, dtype=np.float32)
+#     Y = linspace_prange(ymin, ymax, yn, dtype=np.float32)
 #     # C = X + Y*1j
 #     C = np.reshape(X, (xn, 1)) + Y * 1j
 #     N_ = np.zeros(C.shape, dtype=np.int64)
-#     Z_ = np.zeros(C.shape, dtype=np.complex128)
+#     Z_ = np.zeros(C.shape, dtype=np.complex64)
 #     # Xi.shape = Yi.shape = C.shape = xn*yn
 #     Xi = np.reshape(Xi, (xn*yn))
 #     Yi = np.reshape(Yi, (xn*yn))
 #     C = np.reshape(C, (xn*yn))
 
-#     Z = np.zeros(C.shape, np.complex128)
+#     Z = np.zeros(C.shape, np.complex64)
 #     for i in range(itermax):
 #         if not len(Z):
 #             break

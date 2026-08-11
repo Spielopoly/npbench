@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     # Initialization
     NI, NJ, NK = 2048, 2048, 2048
-    alpha, beta, C, A, B = init_data(NI, NJ, NK, np.float64)
+    alpha, beta, C, A, B = init_data(NI, NJ, NK, np.float32)
     lg_C = orig_np.copy(C)
 
     # First execution

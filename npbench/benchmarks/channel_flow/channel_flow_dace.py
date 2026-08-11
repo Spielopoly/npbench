@@ -14,8 +14,8 @@ nx, ny, nit = (dc.symbol(s, dc.int64) for s in ('nx', 'ny', 'nit'))
 
 
 @dc.program
-def build_up_b(rho: dc.float64, dt: dc.float64, dx: dc.float64, dy: dc.float64,
-               u: dc.float64[ny, nx], v: dc.float64[ny, nx]):
+def build_up_b(rho: dc.float32, dt: dc.float32, dx: dc.float32, dy: dc.float32,
+               u: dc.float32[ny, nx], v: dc.float32[ny, nx]):
     b = np.zeros_like(u)
     b[1:-1,
       1:-1] = (rho * (1 / dt * ((u[1:-1, 2:] - u[1:-1, 0:-2]) / (2 * dx) +
@@ -45,8 +45,8 @@ def build_up_b(rho: dc.float64, dt: dc.float64, dx: dc.float64, dy: dc.float64,
 
 
 @dc.program
-def pressure_poisson_periodic(p: dc.float64[ny, nx], dx: dc.float64,
-                              dy: dc.float64, b: dc.float64[ny, nx]):
+def pressure_poisson_periodic(p: dc.float32[ny, nx], dx: dc.float32,
+                              dy: dc.float32, b: dc.float32[ny, nx]):
     pn = np.empty_like(p)
 
     for q in range(nit):
@@ -74,10 +74,10 @@ def pressure_poisson_periodic(p: dc.float64[ny, nx], dx: dc.float64,
 
 
 @dc.program
-def channel_flow(nit: dc.int64, u: dc.float64[ny, nx], v: dc.float64[ny, nx],
-                 dt: dc.float64, dx: dc.float64, dy: dc.float64,
-                 p: dc.float64[ny, nx], rho: dc.float64, nu: dc.float64,
-                 F: dc.float64):
+def channel_flow(nit: dc.int64, u: dc.float32[ny, nx], v: dc.float32[ny, nx],
+                 dt: dc.float32, dx: dc.float32, dy: dc.float32,
+                 p: dc.float32[ny, nx], rho: dc.float32, nu: dc.float32,
+                 F: dc.float32):
     udiff = 1.0
     stepcount = 0
 

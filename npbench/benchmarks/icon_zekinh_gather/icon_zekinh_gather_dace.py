@@ -5,8 +5,8 @@ NB, NLEV, NPROMA = (dc.symbol(s, dtype=dc.int64) for s in ('NB', 'NLEV', 'NPROMA
 
 
 @dc.program
-def kernel(e_bln: dc.float64[NB, 3, NPROMA], edge_idx: dc.int32[NB, NPROMA, 3], edge_blk: dc.int32[NB, NPROMA, 3],
-           z_kin_hor_e: dc.float64[NB, NLEV, NPROMA], z_ekinh: dc.float64[NB, NLEV, NPROMA]):
+def kernel(e_bln: dc.float32[NB, 3, NPROMA], edge_idx: dc.int32[NB, NPROMA, 3], edge_blk: dc.int32[NB, NPROMA, 3],
+           z_kin_hor_e: dc.float32[NB, NLEV, NPROMA], z_ekinh: dc.float32[NB, NLEV, NPROMA]):
     for jb in range(NB):
         for jk in range(NLEV):
             for jc in range(NPROMA):

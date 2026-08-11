@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     # Initialization
     M, N = 100, 1000
-    float_n, data = init_data(M, N, np.float64)
+    float_n, data = init_data(M, N, np.float32)
     lg_data = np.copy(data)
 
     # First execution

@@ -13,6 +13,6 @@ def initialize(R, K):
 
     N = R**K
     X = rng_complex((N, ), rng)
-    Y = np.zeros_like(X, dtype=np.complex128)
+    Y = np.zeros_like(X, dtype=np.complex64)
 
     return N, X, Y

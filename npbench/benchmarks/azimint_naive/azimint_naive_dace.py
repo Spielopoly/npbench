@@ -15,10 +15,10 @@ N, npt = (dc.symbol(s, dtype=dc.int64) for s in ('N', 'npt'))
 
 
 @dc.program
-def azimint_naive(data: dc.float64[N], radius: dc.float64[N]):
+def azimint_naive(data: dc.float32[N], radius: dc.float32[N]):
     # rmax = radius.max()
     rmax = np.amax(radius)
-    res = np.zeros((npt, ), dtype=np.float64)  # Fix in np.full
+    res = np.zeros((npt, ), dtype=np.float32)  # Fix in np.full
     for i in range(npt):
         # for i in dc.map[0:npt]:  # Optimization
         r1 = rmax * i / npt
@@ -27,7 +27,7 @@ def azimint_naive(data: dc.float64[N], radius: dc.float64[N]):
         # values_r12 = data[mask_r12]
         # res[i] = np.mean(values_r12)
         on_values = 0
-        tmp = np.float64(0)
+        tmp = np.float32(0)
         for j in dc.map[0:N]:
             if mask_r12[j]:
                 tmp += data[j]

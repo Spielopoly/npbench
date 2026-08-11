@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# pythran export kernel(float64, float64[:,:])
+# pythran export kernel(float32, float32[:,:])
 def kernel(alpha, imgIn):
 
     k = (1.0 - np.exp(-alpha)) * (1.0 - np.exp(-alpha)) / (

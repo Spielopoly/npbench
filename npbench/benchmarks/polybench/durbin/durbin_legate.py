@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # Initialization
     N = 1000
-    r, y = init_data(N, np.float64)
+    r, y = init_data(N, np.float32)
 
     # First execution
     np_y = np_impl.kernel(r)

@@ -5,7 +5,7 @@ N = dc.symbol('N', dtype=dc.int64)
 
 
 @dc.program
-def kernel(TSTEPS: dc.int64, A: dc.float64[N, N, N], B: dc.float64[N, N, N]):
+def kernel(TSTEPS: dc.int64, A: dc.float32[N, N, N], B: dc.float32[N, N, N]):
 
     for t in range(1, TSTEPS):
         B[1:-1, 1:-1,

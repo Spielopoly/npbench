@@ -10,11 +10,11 @@ import cupy as np
 def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, maxiter, horizon=2.0):
     # Adapted from https://www.ibm.com/developerworks/community/blogs/jfp/...
     #              .../entry/How_To_Compute_Mandelbrodt_Set_Quickly?lang=en
-    X = np.linspace(xmin, xmax, xn, dtype=np.float64)
-    Y = np.linspace(ymin, ymax, yn, dtype=np.float64)
+    X = np.linspace(xmin, xmax, xn, dtype=np.float32)
+    Y = np.linspace(ymin, ymax, yn, dtype=np.float32)
     C = X + Y[:, None] * 1j
     N = np.zeros(C.shape, dtype=np.int64)
-    Z = np.zeros(C.shape, dtype=np.complex128)
+    Z = np.zeros(C.shape, dtype=np.complex64)
     for n in range(maxiter):
         I = np.less(abs(Z), horizon)
         N[I] = n

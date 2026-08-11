@@ -15,7 +15,7 @@ def initialize(M, N, nnz):
                     N,
                     density=nnz / (M * N),
                     format='csr',
-                    dtype=np.float64,
+                    dtype=np.float32,
                     random_state=rng)
     rows = np.uint32(matrix.indptr)
     cols = np.uint32(matrix.indices)

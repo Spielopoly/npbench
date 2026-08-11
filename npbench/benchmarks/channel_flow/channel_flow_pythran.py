@@ -10,8 +10,8 @@
 import numpy as np
 
 
-# pythran export build_up_b(float64, float64, float64, float64, float64[:,:],
-#                           float64[:,:])
+# pythran export build_up_b(float32, float32, float32, float32, float32[:,:],
+#                           float32[:,:])
 def build_up_b(rho, dt, dx, dy, u, v):
     b = np.zeros_like(u)
     b[1:-1,
@@ -41,8 +41,8 @@ def build_up_b(rho, dt, dx, dy, u, v):
     return b
 
 
-# pythran export pressure_poisson_periodic(int64, float64[:,:], float64,
-#                                          float64, float64[:,:])
+# pythran export pressure_poisson_periodic(int64, float32[:,:], float32,
+#                                          float32, float32[:,:])
 def pressure_poisson_periodic(nit, p, dx, dy, b):
     pn = np.empty_like(p)
 
@@ -70,9 +70,9 @@ def pressure_poisson_periodic(nit, p, dx, dy, b):
         p[0, :] = p[1, :]  # dp/dy = 0 at y = 0
 
 
-# pythran export channel_flow(int64, float64[:,:], float64[:,:], float64,
-#                             float64, float64, float64[:,:], float64, float64,
-#                             float64)
+# pythran export channel_flow(int64, float32[:,:], float32[:,:], float32,
+#                             float32, float32, float32[:,:], float32, float32,
+#                             float32)
 def channel_flow(nit, u, v, dt, dx, dy, p, rho, nu, F):
     udiff = 1
     stepcount = 0
