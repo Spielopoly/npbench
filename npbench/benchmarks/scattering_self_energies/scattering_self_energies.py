@@ -4,7 +4,8 @@ import numpy as np
 
 
 def rng_complex(shape, rng):
-    return (rng.random(shape) + rng.random(shape) * 1j)
+    return (rng.random(shape, dtype=np.float32) +
+            rng.random(shape, dtype=np.float32) * np.complex64(1j))
 
 
 def initialize(Nkz, NE, Nqz, Nw, N3D, NA, NB, Norb):

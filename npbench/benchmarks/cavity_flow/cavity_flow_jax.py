@@ -50,7 +50,7 @@ def pressure_poisson(nit, p, dx, dy, b):
 
 @partial(jax.jit, static_argnums=(0,1,2,3,10,11,))
 def cavity_flow(nx, ny, nt, nit, u, v, dt, dx, dy, p, rho, nu):
-    b = jnp.zeros((ny, nx))
+    b = jnp.zeros((ny, nx), dtype=jnp.float32)
     array_vals = (u, v, p, b)
 
     def body_func(array_vals, _):

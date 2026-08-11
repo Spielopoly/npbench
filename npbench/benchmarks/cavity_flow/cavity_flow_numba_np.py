@@ -36,7 +36,7 @@ def pressure_poisson(nit, p, dx, dy, b):
 def nopython_mode(nx, ny, nt, nit, u, v, dt, dx, dy, p, rho, nu):
     un = np.empty_like(u)
     vn = np.empty_like(v)
-    b = np.zeros((ny, nx))
+    b = np.zeros((ny, nx), dtype=np.float32)
 
     for n in range(nt):
         un = u.copy()

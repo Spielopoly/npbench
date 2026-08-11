@@ -53,7 +53,7 @@ def cavity_flow(nt: dc.int64, nit: dc.int64, u: dc.float32[ny, nx],
                 nu: dc.float32):
     un = np.empty_like(u)
     vn = np.empty_like(v)
-    b = np.zeros((ny, nx))
+    b = np.zeros((ny, nx), dtype=np.float32)
 
     for n in range(nt):
         un[:] = u.copy()
