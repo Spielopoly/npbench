@@ -284,12 +284,15 @@ class DaceFramework(Framework):
             # overwrite below is the verified-safe combination.
             # _TILE_NODE_TYPES must cover every node type VectorizeCPUMultiDim can
             # emit; a missing type would stay 'scalar'-stamped and fail nvcc.
+            from dace.transformation.passes.vectorization.config import VectorizeConfig
             from dace.transformation.passes.vectorization.vectorize_cpu_multi_dim import (
                 VectorizeCPUMultiDim, _TILE_NODE_TYPES)
             from dace.transformation.passes.vectorization.remove_unused_per_lane_symbols import (
                 RemoveUnusedPerLaneSymbols)
-            VectorizeCPUMultiDim(widths=(width, ), target_isa="SCALAR",
-                                 expand_tile_nodes=False).apply_pass(sdfg, {})
+            config = VectorizeConfig(widths=(width, ),
+                                     target_isa="SCALAR",
+                                     expand_tile_nodes=False)
+            VectorizeCPUMultiDim(config).apply_pass(sdfg, {})
             tiles = [n for n, _ in sdfg.all_nodes_recursive() if isinstance(n, _TILE_NODE_TYPES)]
             if not tiles:
                 return 0
