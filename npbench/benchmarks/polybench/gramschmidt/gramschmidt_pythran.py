@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# pythran export kernel(float32[:,:])
+# pythran export kernel(float64[:,:])
 def kernel(A):
 
     Q = np.zeros_like(A)

@@ -13,11 +13,11 @@ def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, itermax, horizon=2.0):
     # Adapted from
     # https://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
     Xi, Yi = jnp.mgrid[0:xn, 0:yn]
-    X = jnp.linspace(xmin, xmax, xn, dtype=jnp.float32)[Xi]
-    Y = jnp.linspace(ymin, ymax, yn, dtype=jnp.float32)[Yi]
+    X = jnp.linspace(xmin, xmax, xn, dtype=jnp.float64)[Xi]
+    Y = jnp.linspace(ymin, ymax, yn, dtype=jnp.float64)[Yi]
     C = X + Y * 1j
     N_ = jnp.zeros(C.shape, dtype=jnp.int64)
-    Z_ = jnp.zeros(C.shape, dtype=jnp.complex64)
+    Z_ = jnp.zeros(C.shape, dtype=jnp.complex128)
 
     original_shape = C.shape
     Xi = Xi.reshape(-1)
@@ -42,7 +42,7 @@ def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, itermax, horizon=2.0):
 
         return (Z, Xi, Yi, C, N_, Z_, mask)
 
-    init_state = (jnp.zeros_like(C, dtype=jnp.complex64), Xi, Yi, C,
+    init_state = (jnp.zeros_like(C, dtype=jnp.complex128), Xi, Yi, C,
                   N_.reshape(-1), Z_.reshape(-1), jnp.ones_like(C, dtype=bool))
     _, _, _, _, N_, Z_, _ = jax.lax.fori_loop(0, itermax, body_fun, init_state)
 

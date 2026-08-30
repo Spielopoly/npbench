@@ -17,7 +17,7 @@ from functools import partial
 @partial(jax.jit, static_argnums=(2,))  
 def azimint_naive(data, radius, npt):
     rmax = radius.max()
-    res = jnp.zeros(npt, dtype=jnp.float32)
+    res = jnp.zeros(npt, dtype=jnp.float64)
 
     def loop_body(i, res):
         r1 = rmax * i / npt

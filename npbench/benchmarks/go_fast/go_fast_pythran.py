@@ -3,7 +3,7 @@
 import numpy as np
 
 
-# pythran export go_fast(float32[:])
+# pythran export go_fast(float64[:])
 def go_fast(a):
     trace = 0.0
     for i in range(a.shape[0]):

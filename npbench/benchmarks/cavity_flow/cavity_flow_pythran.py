@@ -10,8 +10,8 @@
 import numpy as np
 
 
-# pythran export build_up_b(float32[:,:], float32, float32, float32[:,:],
-#                           float32[:,:], float32, float32)
+# pythran export build_up_b(float64[:,:], float64, float64, float64[:,:],
+#                           float64[:,:], float64, float64)
 def build_up_b(b, rho, dt, u, v, dx, dy):
 
     b[1:-1,
@@ -23,8 +23,8 @@ def build_up_b(b, rho, dt, u, v, dx, dy):
                       ((v[2:, 1:-1] - v[0:-2, 1:-1]) / (2 * dy))**2))
 
 
-# pythran export pressure_poisson(int64, float32[:,:], float32, float32,
-#                                 float32[:,:])
+# pythran export pressure_poisson(int64, float64[:,:], float64, float64,
+#                                 float64[:,:])
 def pressure_poisson(nit, p, dx, dy, b):
     pn = np.empty_like(p)
     pn = p.copy()
@@ -42,13 +42,13 @@ def pressure_poisson(nit, p, dx, dy, b):
         p[-1, :] = 0  # p = 0 at y = 2
 
 
-# pythran export cavity_flow(int64, int64, int64, int64, float32[:,:],
-#                            float32[:,:], float32, float32, float32,
-#                            float32[:,:], float32, float32)
+# pythran export cavity_flow(int64, int64, int64, int64, float64[:,:],
+#                            float64[:,:], float64, float64, float64,
+#                            float64[:,:], float64, float64)
 def cavity_flow(nx, ny, nt, nit, u, v, dt, dx, dy, p, rho, nu):
     un = np.empty_like(u)
     vn = np.empty_like(v)
-    b = np.zeros((ny, nx), dtype=np.float32)
+    b = np.zeros((ny, nx))
 
     for n in range(nt):
         un = u.copy()

@@ -11,10 +11,10 @@
 import numpy as np
 
 
-# pythran export azimint_naive(float32[], float32[], int64)
+# pythran export azimint_naive(float64[], float64[], int64)
 def azimint_naive(data, radius, npt):
     rmax = radius.max()
-    res = np.zeros(npt, dtype=np.float32)
+    res = np.zeros(npt, dtype=np.float64)
     for i in range(npt):
         r1 = rmax * i / npt
         r2 = rmax * (i + 1) / npt

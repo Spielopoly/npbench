@@ -15,7 +15,7 @@ import numba as nb
 @nb.jit(nopython=True, parallel=True, fastmath=True)
 def azimint_naive(data, radius, npt):
     rmax = radius.max()
-    res = np.zeros(npt, dtype=np.float32)
+    res = np.zeros(npt, dtype=np.float64)
     for i in nb.prange(npt):
         r1 = rmax * i / npt
         r2 = rmax * (i + 1) / npt

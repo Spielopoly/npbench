@@ -5,7 +5,7 @@ M, N = (dc.symbol(s, dtype=dc.int64) for s in ('M', 'N'))
 
 
 @dc.program
-def kernel(float_n: dc.float32, data: dc.float32[N, M]):
+def kernel(float_n: dc.float64, data: dc.float64[N, M]):
 
     mean = np.mean(data, axis=0)
     # stddev = np.std(data, axis=0)

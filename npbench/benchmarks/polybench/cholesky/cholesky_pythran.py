@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# pythran export kernel(float32[:,:])
+# pythran export kernel(float64[:,:])
 def kernel(A):
 
     A[0, 0] = np.sqrt(A[0, 0])

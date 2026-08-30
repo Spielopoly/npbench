@@ -5,7 +5,7 @@ M, N, S = (dc.symbol(s, dtype=dc.int64) for s in ('M', 'N', 'S'))
 
 
 @dc.program
-def kernel(A: dc.float32[M, N]):
+def kernel(A: dc.float64[M, N]):
 
     Q = np.zeros_like(A)
     R = np.zeros((N, N), dtype=A.dtype)

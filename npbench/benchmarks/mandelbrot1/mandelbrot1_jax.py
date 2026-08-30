@@ -12,11 +12,11 @@ from functools import partial
 def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, maxiter, horizon=2.0):
     # Adapted from https://www.ibm.com/developerworks/community/blogs/jfp/...
     #              .../entry/How_To_Compute_Mandelbrodt_Set_Quickly?lang=en
-    X = jnp.linspace(xmin, xmax, xn, dtype=jnp.float32)
-    Y = jnp.linspace(ymin, ymax, yn, dtype=jnp.float32)
+    X = jnp.linspace(xmin, xmax, xn, dtype=jnp.float64)
+    Y = jnp.linspace(ymin, ymax, yn, dtype=jnp.float64)
     C = X + Y[:, None] * 1j
     N = jnp.zeros(C.shape, dtype=jnp.int64)
-    Z = jnp.zeros(C.shape, dtype=jnp.complex64)
+    Z = jnp.zeros(C.shape, dtype=jnp.complex128)
 
     def body_fun(n, state):
         Z, N = state

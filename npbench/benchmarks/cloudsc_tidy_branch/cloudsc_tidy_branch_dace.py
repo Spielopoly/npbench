@@ -12,8 +12,8 @@ ZQTMST = 1.0 / PTSPHY
 
 
 @dc.program
-def kernel(zqx_l: dc.float32[KLEV, KLON], zqx_i: dc.float32[KLEV, KLON], zqx_v: dc.float32[KLEV, KLON],
-           za: dc.float32[KLEV, KLON], ptend_q: dc.float32[KLEV, KLON], ptend_t: dc.float32[KLEV, KLON]):
+def kernel(zqx_l: dc.float64[KLEV, KLON], zqx_i: dc.float64[KLEV, KLON], zqx_v: dc.float64[KLEV, KLON],
+           za: dc.float64[KLEV, KLON], ptend_q: dc.float64[KLEV, KLON], ptend_t: dc.float64[KLEV, KLON]):
     for jk in range(KLEV):
         for jl in range(KLON):
             if zqx_l[jk, jl] + zqx_i[jk, jl] < RLMIN or za[jk, jl] < RAMIN:

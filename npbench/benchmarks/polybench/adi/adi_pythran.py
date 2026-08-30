@@ -3,7 +3,7 @@
 import numpy as np
 
 
-# pythran export kernel(int, int, float32[:,:])
+# pythran export kernel(int, int, float64[:,:])
 def kernel(TSTEPS, N, u):
 
     v = np.empty(u.shape, dtype=u.dtype)

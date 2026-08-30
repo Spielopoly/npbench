@@ -38,7 +38,7 @@ import numpy as np
 
 
 def get_bin_edges(a, bins):
-    bin_edges = np.zeros((bins + 1, ), dtype=np.float32)
+    bin_edges = np.zeros((bins + 1, ), dtype=np.float64)
     a_min = a.min()
     a_max = a.max()
     delta = (a_max - a_min) / bins
@@ -84,7 +84,7 @@ def histogram_w(a, bins, weights):
     return hist, bin_edges
 
 
-# pythran export azimint_hist(float32[], float32[], int64)
+# pythran export azimint_hist(float64[], float64[], int64)
 def azimint_hist(data, radius, npt):
     # histu = np.histogram(radius, npt)[0]
     histu = histogram(radius, npt)[0]

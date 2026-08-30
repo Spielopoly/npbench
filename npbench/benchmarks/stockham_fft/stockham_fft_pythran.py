@@ -12,14 +12,14 @@ def mgrid(xn, yn):
     return Xi, Yi
 
 
-# pythran export stockham_fft(int, int, int, float32[:], float32[:])
+# pythran export stockham_fft(int, int, int, float64[:], float64[:])
 def stockham_fft(N, R, K, x, y):
 
     # Generate DFT matrix for radix R.
     # Define transient variable for matrix.
     # i_coord, j_coord = np.mgrid[0:R, 0:R]
     i_coord, j_coord = mgrid(R, R)
-    dft_mat = np.empty((R, R), dtype=np.complex64)
+    dft_mat = np.empty((R, R), dtype=np.complex128)
     dft_mat = np.exp(-2.0j * np.pi * i_coord * j_coord / R)
     # Move input x to output y
     # to avoid overwriting the input.
@@ -36,7 +36,7 @@ def stockham_fft(N, R, K, x, y):
         yv = y.reshape(R**i, R, R**(K - i - 1))
         tmp_perm = np.transpose(yv, axes=(1, 0, 2))
         # Twiddle Factor multiplication
-        D = np.empty((R, R**i, R**(K - i - 1)), dtype=np.complex64)
+        D = np.empty((R, R**i, R**(K - i - 1)), dtype=np.complex128)
         tmp = np.exp(-2.0j * np.pi * ii_coord[:, :R**i] * jj_coord[:, :R**i] /
                      R**(i + 1))
         # D[:] = np.repeat(np.reshape(tmp, (R, R**i, 1)), R ** (K-i-1), axis=2)

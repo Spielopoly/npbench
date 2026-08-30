@@ -23,17 +23,17 @@ def mandelbrot(xmin, xmax, ymin, ymax, xn, yn, itermax, horizon=2.0):
     # https://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
     # Xi, Yi = np.mgrid[0:xn, 0:yn]
     Xi, Yi = mgrid(xn, yn)
-    X = np.linspace(xmin, xmax, xn, dtype=np.float32)[Xi]
-    Y = np.linspace(ymin, ymax, yn, dtype=np.float32)[Yi]
+    X = np.linspace(xmin, xmax, xn, dtype=np.float64)[Xi]
+    Y = np.linspace(ymin, ymax, yn, dtype=np.float64)[Yi]
     C = X + Y * 1j
     N_ = np.zeros(C.shape, dtype=np.int64)
-    Z_ = np.zeros(C.shape, dtype=np.complex64)
+    Z_ = np.zeros(C.shape, dtype=np.complex128)
     # Xi.shape = Yi.shape = C.shape = xn*yn
     Xi = Xi.reshape(xn * yn)
     Yi = Yi.reshape(xn * yn)
     C = C.reshape(xn * yn)
 
-    Z = np.zeros(xn * yn, np.complex64)
+    Z = np.zeros(xn * yn, np.complex128)
     for i in range(itermax):
         if not len(Z):
             break

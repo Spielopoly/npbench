@@ -40,7 +40,7 @@ import numba as nb
 
 @nb.jit(nopython=True, parallel=True, fastmath=True)
 def get_bin_edges_parallel(a, bins):
-    bin_edges = np.zeros((bins + 1, ), dtype=np.float32)
+    bin_edges = np.zeros((bins + 1, ), dtype=np.float64)
     a_min = a.min()
     a_max = a.max()
     delta = (a_max - a_min) / bins

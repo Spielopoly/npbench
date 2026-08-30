@@ -43,7 +43,7 @@ def batchnorm2d(x, eps=1e-5):
 def resnet_basicblock(input, conv1, conv2, conv3):
     # Pad output of first convolution for second convolution
     padded = np.zeros((input.shape[0], input.shape[1] + 2, input.shape[2] + 2,
-                       conv1.shape[3]), dtype=input.dtype)
+                       conv1.shape[3]))
 
     padded[:, 1:-1, 1:-1, :] = conv2d(input, conv1)
     x = batchnorm2d(padded)

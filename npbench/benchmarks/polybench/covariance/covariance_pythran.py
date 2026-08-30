@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# pythran export kernel(int, float32, float32[:, :])
+# pythran export kernel(int, float64, float64[:, :])
 def kernel(M, float_n, data):
 
     # mean = np.sum(data, axis=0) / float_n

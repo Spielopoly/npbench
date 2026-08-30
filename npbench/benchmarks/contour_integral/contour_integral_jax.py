@@ -4,13 +4,13 @@ from functools import partial
 
 @partial(jax.jit, static_argnums=(0, 1, 2))
 def contour_integral(NR, NM, slab_per_bc, Ham, int_pts, Y):
-    P0 = jnp.zeros((NR, NM), dtype=jnp.complex64)
-    P1 = jnp.zeros((NR, NM), dtype=jnp.complex64)
+    P0 = jnp.zeros((NR, NM), dtype=jnp.complex128)
+    P1 = jnp.zeros((NR, NM), dtype=jnp.complex128)
 
     def body_fun(i, accum):
         P0, P1 = accum
         z = int_pts[i]
-        Tz = jnp.zeros((NR, NR), dtype=jnp.complex64)
+        Tz = jnp.zeros((NR, NR), dtype=jnp.complex128)
 
         def compute_Tz(n, Tz):
             zz = jnp.power(z, slab_per_bc / 2 - n)

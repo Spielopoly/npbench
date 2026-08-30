@@ -6,10 +6,10 @@ import numba as nb
 
 @nb.jit(nopython=True, parallel=True, fastmath=True)
 def contour_integral(NR, NM, slab_per_bc, Ham, int_pts, Y):
-    P0 = np.zeros((NR, NM), dtype=np.complex64)
-    P1 = np.zeros((NR, NM), dtype=np.complex64)
+    P0 = np.zeros((NR, NM), dtype=np.complex128)
+    P1 = np.zeros((NR, NM), dtype=np.complex128)
     for z in int_pts:
-        Tz = np.zeros((NR, NR), dtype=np.complex64)
+        Tz = np.zeros((NR, NR), dtype=np.complex128)
         for n in range(slab_per_bc + 1):
             zz = np.power(z, slab_per_bc / 2 - n)
             Tz += zz * Ham[n]

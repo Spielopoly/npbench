@@ -6,8 +6,8 @@ NI, NJ, NK, NL = (dc.symbol(s, dtype=dc.int64)
 
 
 @dc.program
-def kernel(alpha: dc.float32, beta: dc.float32, A: dc.float32[NI, NK],
-           B: dc.float32[NK, NJ], C: dc.float32[NJ, NL], D: dc.float32[NI,
+def kernel(alpha: dc.float64, beta: dc.float64, A: dc.float64[NI, NK],
+           B: dc.float64[NK, NJ], C: dc.float64[NJ, NL], D: dc.float64[NI,
                                                                        NL]):
 
     D[:] = alpha * A @ B @ C + beta * D

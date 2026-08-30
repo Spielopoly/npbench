@@ -5,8 +5,8 @@ TMAX, NX, NY = (dc.symbol(s, dtype=dc.int64) for s in ('TMAX', 'NX', 'NY'))
 
 
 @dc.program
-def kernel(ex: dc.float32[NX, NY], ey: dc.float32[NX, NY],
-           hz: dc.float32[NX, NY], _fict_: dc.float32[TMAX]):
+def kernel(ex: dc.float64[NX, NY], ey: dc.float64[NX, NY],
+           hz: dc.float64[NX, NY], _fict_: dc.float64[TMAX]):
 
     for t in range(TMAX):
         ey[0, :] = _fict_[t]

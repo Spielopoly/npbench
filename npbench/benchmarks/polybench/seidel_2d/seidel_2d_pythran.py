@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# pythran export kernel(int, int, float32[:,:])
+# pythran export kernel(int, int, float64[:,:])
 def kernel(TSTEPS, N, A):
 
     for t in range(0, TSTEPS - 1):

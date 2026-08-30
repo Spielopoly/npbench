@@ -6,8 +6,8 @@ I, J, K = (dc.symbol(s, dtype=dc.int64) for s in ('I', 'J', 'K'))
 
 # Adapted from https://github.com/GridTools/gt4py/blob/1caca893034a18d5df1522ed251486659f846589/tests/test_integration/stencil_definitions.py#L194
 @dc.program
-def hdiff(in_field: dc.float32[I + 4, J + 4, K],
-          out_field: dc.float32[I, J, K], coeff: dc.float32[I, J, K]):
+def hdiff(in_field: dc.float64[I + 4, J + 4, K],
+          out_field: dc.float64[I, J, K], coeff: dc.float64[I, J, K]):
     # I, J, K = out_field.shape[0], out_field.shape[1], out_field.shape[2]
     lap_field = 4.0 * in_field[1:I + 3, 1:J + 3, :] - (
         in_field[2:I + 4, 1:J + 3, :] + in_field[0:I + 2, 1:J + 3, :] +
@@ -23,7 +23,7 @@ def hdiff(in_field: dc.float32[I + 4, J + 4, K],
     )
 
     #c1 = (res1 * (in_field[2:I+3, 2:J+2, :] - in_field[1:I+2, 2:J+2, :])) <= 0
-    #flx_field = np.ndarray((I+1, J, K), dtype=np.float32)
+    #flx_field = np.ndarray((I+1, J, K), dtype=np.float64)
     #flx_field[:] = 0.0
     # flx_field[:] = np.positive(res1, where=c1)
     #np.positive(res1, out=flx_field, where=c1)
@@ -37,7 +37,7 @@ def hdiff(in_field: dc.float32[I + 4, J + 4, K],
         res2,
     )
     #c2 = (res2 * (in_field[2:I+2, 2:J+3, :] - in_field[2:I+2, 1:J+2, :])) <= 0
-    #fly_field = np.ndarray((I, J+1, K), dtype=np.float32)
+    #fly_field = np.ndarray((I, J+1, K), dtype=np.float64)
     #fly_field[:] = 0.0
     # fly_field[:] = np.positive(res2, where=c2)
     #np.positive(res2, out=fly_field, where=c2)

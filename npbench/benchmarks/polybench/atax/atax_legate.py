@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     # Initialization
     M, N = 2000, 1000
-    A, x, y, tmp = init_data(M, N, np.float32)
+    A, x, y, tmp = init_data(M, N, np.float64)
 
     # First execution
     lg_y = kernel(A, x)

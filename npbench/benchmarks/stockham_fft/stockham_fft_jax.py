@@ -9,7 +9,7 @@ def stockham_fft(N, R, K, x, y):
     # Generate DFT matrix for radix R.
     # Define transient variable for matrix.
     i_coord, j_coord = jnp.mgrid[0:R, 0:R]
-    # dft_mat = jnp.empty((R, R), dtype=jnp.complex64)
+    # dft_mat = jnp.empty((R, R), dtype=jnp.complex128)
     dft_mat = jnp.exp(-2.0j * jnp.pi * i_coord * j_coord / R)
     y = x
 

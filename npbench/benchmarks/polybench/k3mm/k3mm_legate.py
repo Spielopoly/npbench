@@ -13,7 +13,7 @@ def time_to_ms(raw):
 def legate_benchmark(func, args, out_text="Legate", repeat=1):
     # NI, NJ, NK, NL, NM = 1600, 1800, 2000, 2200, 2400
     NI, NJ, NK, NL, NM = 2000, 2000, 2000, 2000, 2000
-    E, A, B, F, C, D, G = init_data(NI, NJ, NK, NL, NM, np.float32)
+    E, A, B, F, C, D, G = init_data(NI, NJ, NK, NL, NM, np.float64)
     time_list = []
     for _ in range(max(1, repeat)):
         # start = datetime.datetime.now()
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     # Initialization
     # NI, NJ, NK, NL, NM = 1600, 1800, 2000, 2200, 2400
-    # E, A, B, F, C, D, G = init_data(NI, NJ, NK, NL, NM , np.float32)
+    # E, A, B, F, C, D, G = init_data(NI, NJ, NK, NL, NM , np.float64)
 
     # First execution
     # G, _ = benchmark("kernel(A, B, C, D)",

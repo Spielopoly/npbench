@@ -29,7 +29,7 @@
 import numpy as np
 
 
-# pythran export arc_distance(float32 [], float32[], float32[], float32[])
+# pythran export arc_distance(float64 [], float64[], float64[], float64[])
 def arc_distance(theta_1, phi_1, theta_2, phi_2):
     """
     Calculates the pairwise arc distance between all points in vector a and b.

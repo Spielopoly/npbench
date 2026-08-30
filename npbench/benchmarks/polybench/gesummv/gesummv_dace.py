@@ -5,7 +5,7 @@ N = dc.symbol('N', dtype=dc.int64)
 
 
 @dc.program
-def kernel(alpha: dc.float32, beta: dc.float32, A: dc.float32[N, N],
-           B: dc.float32[N, N], x: dc.float32[N]):
+def kernel(alpha: dc.float64, beta: dc.float64, A: dc.float64[N, N],
+           B: dc.float64[N, N], x: dc.float64[N]):
 
     return alpha * A @ x + beta * B @ x

@@ -10,7 +10,7 @@ Code calculates pairwise forces according to Newton's Law of Gravity
 """
 
 
-# pythran export getAcc(float32[:,:,:], float32[:], float, float)
+# pythran export getAcc(float64[:,:,:], float64[:], float, float)
 def getAcc(pos, mass, G, softening):
     """
     Calculate the acceleration on each particle due to Newton's Law 
@@ -44,7 +44,7 @@ def getAcc(pos, mass, G, softening):
     return a
 
 
-# pythran export getEnergy(float32[:,:,:], float32[:,:,:], float32[:], float)
+# pythran export getEnergy(float64[:,:,:], float64[:,:,:], float64[:], float)
 def getEnergy(pos, vel, mass, G):
     """
     Get kinetic energy (KE) and potential energy (PE) of simulation
@@ -82,7 +82,7 @@ def getEnergy(pos, vel, mass, G):
     return KE, PE
 
 
-# pythran export nbody(float32[:], float32[:,:,:], float32[:,:,:], int, int,
+# pythran export nbody(float64[:], float64[:,:,:], float64[:,:,:], int, int,
 #                      float, float, float)
 def nbody(mass, pos, vel, N, Nt, dt, G, softening):
 
@@ -93,10 +93,10 @@ def nbody(mass, pos, vel, N, Nt, dt, G, softening):
     acc = getAcc(pos, mass, G, softening)
 
     # calculate initial energy of system
-    # KE = np.ndarray(Nt+1, dtype=np.float32)
-    # PE = np.ndarray(Nt+1, dtype=np.float32)
-    KE = np.empty(Nt + 1, dtype=np.float32)
-    PE = np.empty(Nt + 1, dtype=np.float32)
+    # KE = np.ndarray(Nt+1, dtype=np.float64)
+    # PE = np.ndarray(Nt+1, dtype=np.float64)
+    KE = np.empty(Nt + 1, dtype=np.float64)
+    PE = np.empty(Nt + 1, dtype=np.float64)
     KE[0], PE[0] = getEnergy(pos, vel, mass, G)
 
     t = 0.0

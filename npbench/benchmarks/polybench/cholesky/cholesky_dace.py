@@ -5,7 +5,7 @@ M, N = (dc.symbol(s, dtype=dc.int64) for s in ('M', 'N'))
 
 
 @dc.program
-def kernel(A: dc.float32[N, N]):
+def kernel(A: dc.float64[N, N]):
 
     A[0, 0] = np.sqrt(A[0, 0])
     for i in range(1, N):

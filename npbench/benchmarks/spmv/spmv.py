@@ -7,7 +7,7 @@ def initialize(M, N, nnz):
     from numpy.random import default_rng
     rng = default_rng(42)
 
-    x = rng.random((N, ), dtype=np.float32)
+    x = rng.random((N, ))
 
     from scipy.sparse import random
 
@@ -15,7 +15,7 @@ def initialize(M, N, nnz):
                     N,
                     density=nnz / (M * N),
                     format='csr',
-                    dtype=np.float32,
+                    dtype=np.float64,
                     random_state=rng)
     rows = np.uint32(matrix.indptr)
     cols = np.uint32(matrix.indices)

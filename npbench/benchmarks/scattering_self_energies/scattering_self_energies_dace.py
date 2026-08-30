@@ -10,10 +10,10 @@ NA, NB, Nkz, NE, Nqz, Nw, Norb, N3D = (dc.symbol(s, dc.int64)
 
 @dc.program
 def scattering_self_energies(neigh_idx: dc.int32[NA, NB],
-                             dH: dc.complex64[NA, NB, N3D, Norb, Norb],
-                             G: dc.complex64[Nkz, NE, NA, Norb, Norb],
-                             D: dc.complex64[Nqz, Nw, NA, NB, N3D, N3D],
-                             Sigma: dc.complex64[Nkz, NE, NA, Norb, Norb]):
+                             dH: dc.complex128[NA, NB, N3D, Norb, Norb],
+                             G: dc.complex128[Nkz, NE, NA, Norb, Norb],
+                             D: dc.complex128[Nqz, Nw, NA, NB, N3D, N3D],
+                             Sigma: dc.complex128[Nkz, NE, NA, Norb, Norb]):
 
     for k in range(Nkz):
         for E in range(NE):

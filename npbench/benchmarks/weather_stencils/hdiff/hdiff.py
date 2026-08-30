@@ -8,8 +8,8 @@ def initialize(I, J, K):
     rng = default_rng(42)
 
     # Define arrays
-    in_field = rng.random((I + 4, J + 4, K), dtype=np.float32)
-    out_field = rng.random((I, J, K), dtype=np.float32)
-    coeff = rng.random((I, J, K), dtype=np.float32)
+    in_field = rng.random((I + 4, J + 4, K))
+    out_field = rng.random((I, J, K))
+    coeff = rng.random((I, J, K))
 
     return in_field, out_field, coeff

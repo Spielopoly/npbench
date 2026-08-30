@@ -4,7 +4,7 @@
 import numpy as np
 
 
-def initialize(NB, NLEV, NPROMA, datatype=np.float32):
+def initialize(NB, NLEV, NPROMA, datatype=np.float64):
     rng = np.random.default_rng(42)
     e_bln = rng.standard_normal((NB, 3, NPROMA)).astype(datatype)
     edge_idx = rng.integers(0, NPROMA, size=(NB, NPROMA, 3)).astype(np.int32)

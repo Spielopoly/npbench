@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # Initialization
     M, N = 2000, 1000
-    A, s, q, p, r = init_data(M, N, np.float32)
+    A, s, q, p, r = init_data(M, N, np.float64)
 
     # First execution
     lg_s, lg_q = kernel(A, p, r)

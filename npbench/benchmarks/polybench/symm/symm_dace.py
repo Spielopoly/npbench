@@ -5,8 +5,8 @@ M, N = (dc.symbol(s, dtype=dc.int64) for s in ('M', 'N'))
 
 
 @dc.program
-def kernel(alpha: dc.float32, beta: dc.float32, C: dc.float32[M, N],
-           A: dc.float32[M, M], B: dc.float32[M, N]):
+def kernel(alpha: dc.float64, beta: dc.float64, C: dc.float64[M, N],
+           A: dc.float64[M, M], B: dc.float64[M, N]):
 
     temp2 = np.empty((N, ), dtype=C.dtype)
     C *= beta

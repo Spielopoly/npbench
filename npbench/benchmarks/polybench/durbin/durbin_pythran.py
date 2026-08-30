@@ -8,7 +8,7 @@ def flip(A):
     return B
 
 
-# pythran export kernel(float32[:])
+# pythran export kernel(float64[:])
 def kernel(r):
 
     y = np.empty_like(r)

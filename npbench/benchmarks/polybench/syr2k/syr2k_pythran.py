@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# pythran export kernel(float32, float32, float32[:,:], float32[:,:], float32[:,:])
+# pythran export kernel(float64, float64, float64[:,:], float64[:,:], float64[:,:])
 def kernel(alpha, beta, C, A, B):
 
     for i in range(A.shape[0]):

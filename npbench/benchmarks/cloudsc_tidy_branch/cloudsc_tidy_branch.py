@@ -4,7 +4,7 @@
 import numpy as np
 
 
-def initialize(KLEV, KLON, datatype=np.float32):
+def initialize(KLEV, KLON, datatype=np.float64):
     rng = np.random.default_rng(42)
     zqx_l = rng.standard_normal((KLEV, KLON)).astype(datatype) * 1e-4
     zqx_i = rng.standard_normal((KLEV, KLON)).astype(datatype) * 1e-4
